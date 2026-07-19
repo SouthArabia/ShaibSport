@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0B0F" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Private Shaib Sport web app" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/app.css" />
+  <title>Shaib Sport</title>
+  <script src="./vendor/hls.min.js" defer></script>
+</head>
+<body>
+  <!-- Responsive splash (cover any device) -->
+  <div class="splash" id="splash" aria-hidden="true">
+    <img src="./assets/brand/splash.png" alt="Shaib Sport" />
+    <p class="filter-progress" id="filter-progress" hidden></p>
+  </div>
+
+  <!-- Login gate -->
+  <div class="login-gate" id="login-gate" hidden>
+    <form class="login-card" id="login-form" autocomplete="on">
+      <img class="login-logo" src="./assets/brand/mainicon.png" alt="" width="72" height="72" />
+      <h1>Shaib Sport</h1>
+      <p id="login-sub">تسجيل الدخول للمتابعة</p>
+      <label>
+        <span id="lbl-user">اسم المستخدم</span>
+        <input id="login-user" name="username" type="text" required dir="auto" />
+      </label>
+      <label>
+        <span id="lbl-pass">كلمة المرور</span>
+        <input id="login-pass" name="password" type="password" required dir="auto" />
+      </label>
+      <p class="login-error" id="login-error" hidden></p>
+      <p class="filter-progress" id="filter-progress-login" hidden></p>
+      <button class="btn" type="submit" id="login-submit">دخول</button>
+    </form>
+  </div>
+
+  <div id="app-shell" hidden>
+  <header class="app-header">
+    <div class="brand-row">
+      <div class="brand">
+        <img class="brand-mark" src="./assets/brand/mainicon.png" alt="" width="40" height="40" />
+        <div class="brand-text">
+          <strong>Shaib Sport</strong>
+          <span id="brand-sub">رفيق فرق الشعيب</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">↻</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="install-banner" id="install-banner" hidden>
+    <div>
+      <p id="install-title"><strong>Install</strong></p>
+      <p id="install-body"></p>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn" id="install-btn" type="button">Install</button>
+      <button class="btn ghost" id="install-dismiss" type="button">Later</button>
+    </div>
+  </div>
+
+  <!-- MATCHES = channel / site tiles -->
+  <main class="page" data-page="matches">
+    <div class="section-head">
+      <div>
+        <h1 id="matches-heading">مباريات</h1>
+        <p data-i18n="matchesSub">القنوات والمواقع والبث</p>
+      </div>
+    </div>
+    <div id="canvas-root"></div>
+  </main>
+
+  <!-- TODAY -->
+  <main class="page" data-page="today" hidden>
+    <div class="section-head">
+      <div>
+        <h1 data-i18n="todayTitle">اليوم</h1>
+        <p data-i18n="todaySub">مباريات اليوم والدولية</p>
+      </div>
+    </div>
+    <div id="today-list"></div>
+  </main>
+
+  <!-- INTERNATIONAL BRACKET -->
+  <main class="page" data-page="international" hidden>
+    <div class="section-head">
+      <div>
+        <h1 data-i18n="intlTitle">الدولي والإقصاء</h1>
+        <p data-i18n="intlSub">الفرق المتأهلة ورسم الإقصاء</p>
+      </div>
+    </div>
+
+    <h2 id="teams-label" style="font-family:var(--font-display);font-size:1.05rem;margin:0 0 8px">الفرق</h2>
+    <div class="knockout-grid" id="knockout-grid"></div>
+
+    <h2 id="bracket-label" style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">رسم الإقصاء</h2>
+    <div class="bracket-frame-wrap">
+      <iframe id="bracket-frame" title="International bracket" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+
+    <h2 style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">Fixtures</h2>
+    <div id="intl-list"></div>
+  </main>
+
+  <!-- SETTINGS -->
+  <main class="page" data-page="settings" hidden>
+    <div class="section-head">
+      <div>
+        <h1 data-i18n="settingsTitle">الإعدادات</h1>
+        <p data-i18n="settingsSub">اللغة والمظهر والخصوصية</p>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-row" id="lbl-language">
+        اللغة
+        <div class="seg" role="group">
+          <button type="button" id="lang-ar" class="active">عربي</button>
+          <button type="button" id="lang-en">EN</button>
+        </div>
+      </div>
+      <div class="settings-row" id="lbl-theme">
+        المظهر
+        <div class="seg" role="group">
+          <button type="button" id="theme-classic" class="active">Classic</button>
+          <button type="button" id="theme-royale">Royale</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-row">
+        <div>
+          <label id="lbl-contact">تواصل</label>
+          <small>415apps@gmail.com</small>
+        </div>
+        <div style="display:flex;gap:8px">
+          <a class="btn ghost" id="btn-wa" href="https://wa.me/15594035364" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn ghost" id="btn-mail" href="mailto:415apps@gmail.com">Email</a>
+        </div>
+      </div>
+      <div class="settings-row">
+        <label id="lbl-logout">تسجيل الخروج</label>
+        <button class="btn ghost" type="button" id="btn-logout">خروج</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-row"><label id="lbl-privacy">سياسة الخصوصية</label></div>
+      <div class="legal" id="privacy-body"></div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-row"><label id="lbl-about">عن التطبيق</label></div>
+      <div class="legal" id="about-body"></div>
+    </div>
+  </main>
+
+  <!-- Full-screen player (browser / HLS) -->
+  <div class="player-sheet" id="player-sheet" hidden>
+    <div class="player-bar">
+      <button class="icon-btn" id="player-close" type="button" aria-label="Close">✕</button>
+      <strong id="player-title">Player</strong>
+    </div>
+    <div class="player-body" id="player-body"></div>
+  </div>
+
+  <nav class="tabbar" aria-label="Main">
+    <button type="button" data-tab="matches" class="active">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span>Matches</span>
+    </button>
+    <button type="button" data-tab="today">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      <span>Today</span>
+    </button>
+    <button type="button" data-tab="international">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6v5H4zM14 6h6v5h-6zM9 14h6v5H9z"/><path d="M7 11v3h10v-3"/></svg>
+      <span>International</span>
+    </button>
+    <button type="button" data-tab="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.2 2.2M16.8 16.8 19 19M19 5l-2.2 2.2M5 19l2.2-2.2"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+  </div><!-- /app-shell -->
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

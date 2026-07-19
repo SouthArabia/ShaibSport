@@ -1,0 +1,207 @@
+import { LOCAL, REMOTE_UPDATE, PWA } from "./pwa-config.js";
+import { loadJSONCascade, kvSet } from "./local-store.js";
+
+function enabled(item) {
+  return item && item.enabled !== false && item.url;
+}
+
+function isFox(p) {
+  const id = String(p.id || "").toLowerCase();
+  const title = String(p.title || "").toLowerCase();
+  return id === "fox-sport" || id.includes("fox") || title.includes("fox");
+}
+
+function isSyria(url = "") {
+  return /syria-player|shootsync|beinmax/i.test(url);
+}
+
+const LIVE_PIN_ORDER = [
+  "live-aljazeera",
+  "live-alhadath",
+  "live-aljazeera-en",
+  "live-france24",
+];
+
+function sortLive(players) {
+  return [...players].sort((a, b) => {
+    const ia = LIVE_PIN_ORDER.indexOf(a.id);
+    const ib = LIVE_PIN_ORDER.indexOf(b.id);
+    const ra = ia === -1 ? 99 : ia;
+    const rb = ib === -1 ? 99 : ib;
+    return ra - rb;
+  });
+}
+
+function browserSortKey(p) {
+  const m = String(p.id || "").match(/browser-(\d+)/i);
+  if (m) return Number(m[1]);
+  const digits = String(p.title || "").match(/(\d+)/);
+  return digits ? Number(digits[1]) : 999;
+}
+
+/** Normalize live_config into Matches canvas sections. */
+export function buildCanvasModel(cfg = {}) {
+  const browsers = (cfg.browserPlayers || []).filter(enabled);
+  const topBrowsers = browsers
+    .filter((p) => !isFox(p))
+    .sort((a, b) => browserSortKey(a) - browserSortKey(b))
+    .map((p) => {
+      const syria = isSyria(p.url);
+      const yt = /youtube\.com|youtu\.be/i.test(p.url);
+      const autoFast =
+        String(p.id) === "browser-6" ||
+        /قناة\s*6/.test(p.title || "") ||
+        /majed-koora/i.test(p.url);
+      return {
+        kind: "browser",
+        id: p.id,
+        title: p.title,
+        url: p.url,
+        emphasized: syria,
+        icon: syria ? "bolt" : "tv",
+        streamSafe: syria || yt,
+        autoFastServer: autoFast,
+        immersive: syria || isFox(p),
+      };
+    });
+
+  const domains = (cfg.domainBrowsers || [])
+    .filter(enabled)
+    .map((d) => ({
+      kind: "domain",
+      id: d.id,
+      title: d.title,
+      url: d.url,
+      mode: d.mode || "manual",
+      emphasized: d.mode && d.mode !== "manual",
+      icon: d.mode && d.mode !== "manual" ? "bolt" : "safari",
+      subtitle: (() => {
+        try {
+          return new URL(d.url).hostname.replace(/^www\./, "");
+        } catch {
+          return d.url;
+        }
+      })(),
+    }));
+
+  if (!topBrowsers.length) {
+    [
+      ["ch1", cfg.channel1_url, "قناة 1"],
+      ["ch2", cfg.channel2_url, "قناة 2"],
+    ].forEach(([id, url, title]) => {
+      if (url) {
+        topBrowsers.push({
+          kind: "browser",
+          id,
+          title,
+          url,
+          emphasized: isSyria(url),
+          icon: isSyria(url) ? "bolt" : "tv",
+        });
+      }
+    });
+  }
+
+  const fox = browsers
+    .filter(isFox)
+    .map((p) => ({
+      kind: "browser",
+      id: p.id,
+      title: p.title,
+      url: p.url,
+      emphasized: true,
+      icon: "tv",
+      fox: true,
+      streamSafe: false,
+      autoFastServer: false,
+      immersive: true,
+    }));
+
+  let lives = (cfg.livePlayers || [])
+    .filter(enabled)
+    .map((p) => ({
+      kind: "live",
+      id: p.id,
+      title: p.title,
+      url: p.url,
+      subtitle: p.subtitle || "بث مباشر",
+      emphasized: false,
+      icon: "tv",
+      live: true,
+    }));
+
+  if (!lives.length) {
+    [
+      ["watch-stream-1", cfg.watch_stream1_url, "Stream 1"],
+      ["watch-stream-2", cfg.watch_stream2_url, "Stream 2"],
+    ].forEach(([id, url, title]) => {
+      if (url) {
+        lives.push({
+          kind: "live",
+          id,
+          title,
+          url,
+          subtitle: "Watch HLS",
+          icon: "tv",
+          live: true,
+        });
+      }
+    });
+  }
+  lives = sortLive(lives);
+
+  const cb = cfg.customBrowser || {};
+  const custom =
+    cb.enabled === false
+      ? null
+      : {
+          kind: "custom",
+          id: "custom-browser",
+          title: cb.title || "فتح أي رابط مباراة",
+          subtitle:
+            cb.subtitle ||
+            "الصق رابط مباشر لمشغل المباراة وسوف يتم تشغيلها مع حظر الإعلانات",
+          url: cb.start_url || cb.startUrl || "https://www.google.com",
+          emphasized: true,
+          icon: "safari",
+        };
+
+  const ch4 =
+    cfg.ch4_enabled
+      ? {
+          kind: "ch4",
+          id: "ch4",
+          title: cfg.ch4_title_ar || "ملقط المباريات",
+          titleEn: cfg.ch4_title_en || "Match Clipper",
+          subtitle: cfg.ch4_subtitle_ar || "ضع رابط المباراة فقط وضغط انتر",
+          subtitleEn: cfg.ch4_subtitle_en || "Paste the match link only and press Enter",
+          streams: cfg.ch4_streams || [],
+          icon: "search",
+        }
+      : null;
+
+  return {
+    tabTitleAr: cfg.live_title || "مباريات",
+    tabTitleEn: cfg.live_title_en || "Matches",
+    topTiles: [...topBrowsers, ...domains],
+    custom,
+    ch4,
+    bottomTiles: [...lives, ...fox],
+    raw: cfg,
+  };
+}
+
+let cached = null;
+
+export async function loadCanvasConfig(force = false) {
+  if (cached && !force) return cached;
+  const json = await loadJSONCascade({
+    localUrl: LOCAL.liveConfig,
+    remoteUrl: REMOTE_UPDATE.liveConfig,
+    cacheKey: "live_config",
+    enableRemote: PWA.enableRemoteUpdates,
+  });
+  if (json) await kvSet("live_config", json);
+  cached = buildCanvasModel(json || {});
+  return cached;
+}
