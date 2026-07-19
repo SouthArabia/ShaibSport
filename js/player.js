@@ -394,8 +394,8 @@ export function createPlayerController(opts) {
       const bodyText = String(doc.body?.textContent || "").trim();
       // App shell when SW not controlling (?__shaib_player served as index)
       if (
-        doc.getElementById("app") ||
-        doc.querySelector(".app-shell, #home, [data-shaib-app]") ||
+        doc.getElementById("app-shell") ||
+        doc.getElementById("auth-gate") ||
         /shaib\s*sport/i.test(String(doc.title || ""))
       ) {
         return true;
@@ -436,16 +436,17 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch1 (kora-sami) + Ch2 (kore10): direct embed — reliable on mobile
-      if (/kora-sami|splplayer|kore10/i.test(url)) {
+      // Ch2 (kore10): direct AlbaPlayer embed
+      if (/kore10/i.test(url)) {
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );
         currentIframe = frame;
-        return {
-          frame,
-          mode: /kore10/i.test(url) ? "direct-ch2" : "direct-ch1",
-        };
+        return { frame, mode: "direct-ch2" };
+      }
+      // Ch1 (kora-sami/bmax1): SW proxy for popup-kill + autoplay; direct fallback
+      if (/kora-sami|splplayer/i.test(url)) {
+        return mountProxiedWithDirectFallback(url);
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(
