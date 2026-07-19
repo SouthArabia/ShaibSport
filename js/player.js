@@ -665,6 +665,15 @@ export function createPlayerController(opts) {
     body.innerHTML = "";
     body.appendChild(wrap);
 
+    // Fox Sport must load directly: its YouTube player detects proxy/shielded frames.
+    if (tile.fox) {
+      const frame = configureFrame(mountLockedIframe(tile.url, { sandbox: false }));
+      stage.appendChild(frame);
+      currentIframe = frame;
+      status.textContent = "Fox Sport · direct player";
+      return;
+    }
+
     // Channel 3 / non-player sites: EasyList + continuous scan, no popups/redirects
     if (!isDirectPlayerUrl(tile.url) || isChannel3Site(tile.url)) {
       try {
