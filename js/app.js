@@ -536,16 +536,6 @@ function renderIptv() {
         .filter((g) => g.count > 0);
     }
     html += `
-      <div class="canvas-wide" style="margin-bottom:12px">
-        ${tileButton({
-          id: "iptv-main",
-          kind: "ch4",
-          title: t(lang, "iptvMain"),
-          subtitle: IPTV_PLAYLIST_URL.replace(/^https?:\/\//, ""),
-          icon: "tv",
-          emphasized: true,
-        })}
-      </div>
       <div class="canvas-grid">
         ${groups
           .map((g) =>
@@ -583,15 +573,6 @@ function renderIptv() {
   root.querySelector("#iptv-more")?.addEventListener("click", () => {
     state.iptv.page += 1;
     renderIptv();
-  });
-  root.querySelector('[data-tile-id="iptv-main"]')?.addEventListener("click", () => {
-    const sports = data.groups.find((g) => /sport/i.test(g.name));
-    if (sports) {
-      state.iptv.view = "channels";
-      state.iptv.group = sports.name;
-      state.iptv.page = 0;
-      renderIptv();
-    }
   });
   root.querySelectorAll("[data-iptv-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -789,7 +770,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=28"),
+      navigator.serviceWorker.register("./sw.js?v=29"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
