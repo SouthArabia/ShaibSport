@@ -15,6 +15,7 @@ import {
   IPTV_PLAYLIST_URL,
   fetchIptvPlaylist,
   groupChannels,
+  isMenaChannel,
 } from "./iptv.js";
 
 const SOUTH_ARABIA_FLAG = "./assets/flags/south-yemen.svg";
@@ -609,8 +610,16 @@ function renderIptv() {
 
   if (state.iptv.view === "channels" && state.iptv.group) {
     const allMode = state.iptv.group === "__all__";
-    const group = allMode ? null : data.groups.find((g) => g.name === state.iptv.group);
-    let list = allMode ? data.channels || [] : group?.channels || [];
+    const menaMode = state.iptv.group === "__mena__";
+    const group =
+      allMode || menaMode
+        ? null
+        : data.groups.find((g) => g.name === state.iptv.group);
+    let list = allMode
+      ? data.channels || []
+      : menaMode
+        ? (data.channels || []).filter(isMenaChannel)
+        : group?.channels || [];
     if (q) {
       list = list.filter(
         (c) =>
@@ -620,7 +629,11 @@ function renderIptv() {
     }
     const page = state.iptv.page;
     const slice = list.slice(0, (page + 1) * IPTV_PAGE_SIZE);
-    const heading = allMode ? t(lang, "iptvAll") : iptvGroupLabel(lang, state.iptv.group);
+    const heading = allMode
+      ? t(lang, "iptvAll")
+      : menaMode
+        ? t(lang, "iptvMena")
+        : iptvGroupLabel(lang, state.iptv.group);
     html += `
       <div class="iptv-back-row">
         <button type="button" class="btn ghost" id="iptv-back">‹ ${t(lang, "iptvBack")}</button>
@@ -659,7 +672,18 @@ function renderIptv() {
         .filter((g) => g.count > 0 || iptvGroupMatchesQuery(lang, g.name, q));
     }
     const total = data.channels?.length || 0;
+    const menaCount = (data.channels || []).filter(isMenaChannel).length;
     html += `
+      <div class="canvas-wide" style="margin-bottom:12px">
+        ${tileButton({
+          id: "iptv-mena",
+          kind: "ch4",
+          title: t(lang, "iptvMena"),
+          subtitle: `${menaCount} ${t(lang, "iptvChannels")}`,
+          icon: "bolt",
+          emphasized: true,
+        })}
+      </div>
       <div class="canvas-wide" style="margin-bottom:12px">
         ${tileButton({
           id: "iptv-all",
@@ -708,6 +732,12 @@ function renderIptv() {
     state.iptv.page += 1;
     renderIptv();
   });
+  root.querySelector('[data-tile-id="iptv-mena"]')?.addEventListener("click", () => {
+    state.iptv.view = "channels";
+    state.iptv.group = "__mena__";
+    state.iptv.page = 0;
+    renderIptv();
+  });
   root.querySelector('[data-tile-id="iptv-all"]')?.addEventListener("click", () => {
     state.iptv.view = "channels";
     state.iptv.group = "__all__";
@@ -727,9 +757,13 @@ function renderIptv() {
       if (id.startsWith("ch:")) {
         const url = id.slice(3);
         const allMode = state.iptv.group === "__all__";
+        const menaMode = state.iptv.group === "__mena__";
         const list = allMode
           ? data.channels || []
-          : data.groups.find((g) => g.name === state.iptv.group)?.channels || [];
+          : menaMode
+            ? (data.channels || []).filter(isMenaChannel)
+            : data.groups.find((g) => g.name === state.iptv.group)?.channels ||
+              [];
         const index = list.findIndex((c) => c.url === url);
         const ch = index >= 0 ? list[index] : list.find((c) => c.url === url);
         const playlist = list.map((c) => ({
