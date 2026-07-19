@@ -16,6 +16,34 @@
   <link rel="stylesheet" href="./css/app.css" />
   <title>Shaib Sport</title>
   <script src="./vendor/hls.min.js" defer></script>
+  <!-- Fail-safe: never stay on splash if modules hang (common on iOS Safari) -->
+  <script>
+    (function () {
+      function revealLogin() {
+        var gate = document.getElementById("login-gate");
+        var shell = document.getElementById("app-shell");
+        if (gate && gate.hidden && shell && shell.hidden) {
+          gate.hidden = false;
+        }
+      }
+      function hide() {
+        var s = document.getElementById("splash");
+        if (s) {
+          s.classList.add("hide");
+          s.setAttribute("aria-hidden", "true");
+          setTimeout(function () {
+            if (s && s.parentNode) s.parentNode.removeChild(s);
+          }, 500);
+        }
+        revealLogin();
+      }
+      setTimeout(hide, 1200);
+      setTimeout(hide, 3500);
+      window.addEventListener("load", function () {
+        setTimeout(hide, 400);
+      });
+    })();
+  </script>
 </head>
 <body>
   <!-- Responsive splash (cover any device) -->

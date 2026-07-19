@@ -135,7 +135,13 @@ async function fetchText(url) {
   ];
   for (const u of tries) {
     try {
-      const res = await fetch(u, { cache: "no-store" });
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 18000) : null;
+      const res = await fetch(u, {
+        cache: "no-store",
+        signal: ctrl?.signal,
+      });
+      if (timer) clearTimeout(timer);
       if (!res.ok) continue;
       const text = await res.text();
       if (text && text.length > 10) return text;

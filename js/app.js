@@ -493,15 +493,19 @@ function bind() {
 async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
-    await navigator.serviceWorker.register("./sw.js");
+    await Promise.race([
+      navigator.serviceWorker.register("./sw.js"),
+      new Promise((r) => setTimeout(r, 2500)),
+    ]);
   } catch (_) {}
 }
 
 function hideSplash() {
-  const splash = $("#splash");
-  if (!splash) return;
+  const splash = document.getElementById("splash");
+  if (!splash || splash.classList.contains("hide")) return;
   splash.classList.add("hide");
-  setTimeout(() => splash.remove(), 500);
+  splash.setAttribute("aria-hidden", "true");
+  setTimeout(() => splash.remove(), 450);
 }
 
 function setFilterProgressUI(p) {
@@ -561,18 +565,23 @@ async function ensureFiltersReady() {
 
 bind();
 
-(async () => {
-  await registerSW();
-  // Start filter download early (seed lists work immediately; full lists replace them)
-  const bootFilters = ensureFiltersReady();
-  if (isLoggedIn()) {
-    await bootFilters;
-    showApp();
-  } else {
+// Never leave iPhone Safari stuck on splash — hide ASAP, load filters in background.
+(function boot() {
+  // Fail-safe timers (inline HTML also has one); JS path:
+  setTimeout(hideSplash, 700);
+  setTimeout(hideSplash, 2000);
+
+  try {
+    if (isLoggedIn()) showApp();
+    else showLogin();
+  } catch (_) {
     showLogin();
-    bootFilters.catch(() => {});
   }
-  setTimeout(hideSplash, 900);
+  hideSplash();
+
+  // SW + filter lists must not block first paint
+  registerSW().catch(() => {});
+  ensureFiltersReady().catch(() => {});
 })();
 
 window.__shaibLogout = () => {
