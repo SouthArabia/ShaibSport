@@ -355,6 +355,30 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // App shell (HTML documents + same-origin JS/CSS) — NETWORK FIRST so code
+  // updates (e.g. new Live TV tiles) reach the user immediately instead of being
+  // pinned to a stale cached shell. Falls back to cache only when offline.
+  const isShell =
+    request.mode === "navigate" ||
+    request.destination === "document" ||
+    request.destination === "script" ||
+    request.destination === "style" ||
+    /\.(?:html|js|css)(?:$|\?)/i.test(url.pathname + url.search);
+  if (isShell) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return withNoIndex(res);
+        })
+        .catch(() => caches.match(request).then((cached) => (cached ? withNoIndex(cached) : caches.match("./index.html"))))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetched = fetch(request)
