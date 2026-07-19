@@ -135,6 +135,25 @@ iframe[src*="monetag"],iframe[src*="clickadu"],iframe[src*="popcash"]{
 <script id="shaib-player-shield">
 (function(){
   if(window.__shaibPlayerShield)return;window.__shaibPlayerShield=true;
+  var PLAYER_OK=/kora-sami|kore10|syria-player|shootsync|albaplayer|jsdelivr|amazonaws|cloudfront|clappr|jwplayer|gstatic|googleapis|m3u8|blob:|data:/i;
+  var AD_HREF=/guruvpnapp|guru\\s*vpn|fifa-wc-2026|acscdn|baillieumbered|doubleclick|popunder|clickunder|exoclick|propeller|monetag|pavanesbedizen|clickadu|popcash|ad-maven|juicyads|trafficjunky|adnxs|taboola|outbrain|sub_id=/i;
+  function badUrl(u){
+    u=String(u||'');
+    if(!u||u.charAt(0)==='#'||u.indexOf('javascript:')===0||u.indexOf('blob:')===0||u.indexOf('data:')===0) return false;
+    if(PLAYER_OK.test(u)) return false;
+    return AD_HREF.test(u);
+  }
+  function allowNav(u){
+    u=String(u||'');
+    if(!u||u.charAt(0)==='#'||u.indexOf('javascript:')===0) return true;
+    try{
+      var abs=new URL(u,location.href);
+      if(abs.protocol!=='http:'&&abs.protocol!=='https:'&&abs.protocol!=='blob:') return false;
+      if(abs.hostname===location.hostname) return true;
+      if(PLAYER_OK.test(abs.href)||PLAYER_OK.test(abs.hostname)) return true;
+      return false;
+    }catch(e){return false;}
+  }
   function blockOpen(){return null;}
   function lockOpen(){
     try{window.open=blockOpen;}catch(e){}
@@ -143,14 +162,37 @@ iframe[src*="monetag"],iframe[src*="clickadu"],iframe[src*="popcash"]{
     try{if(window.top&&window.top!==window){try{window.top.open=blockOpen;}catch(e2){}}}catch(e){}
   }
   lockOpen();
-  setInterval(lockOpen,250);
-  var AD_HREF=/acscdn|baillieumbered|doubleclick|popunder|clickunder|exoclick|propeller|monetag|pavanesbedizen|clickadu|popcash|ad-maven|juicyads|trafficjunky|adnxs|taboola|outbrain/i;
+  setInterval(lockOpen,200);
+  // Stop iframe navigations / iOS gesture popups that bypass window.open
+  try{
+    var _assign=location.assign.bind(location);
+    var _replace=location.replace.bind(location);
+    location.assign=function(u){ if(badUrl(u)||!allowNav(u)) return; return _assign(u); };
+    location.replace=function(u){ if(badUrl(u)||!allowNav(u)) return; return _replace(u); };
+    var hrefDesc=Object.getOwnPropertyDescriptor(Location.prototype,'href')||Object.getOwnPropertyDescriptor(location,'href');
+    if(hrefDesc&&hrefDesc.set){
+      Object.defineProperty(location,'href',{
+        configurable:true,
+        get:function(){return hrefDesc.get.call(location);},
+        set:function(u){ if(badUrl(u)||!allowNav(u)) return; hrefDesc.set.call(location,u); }
+      });
+    }
+  }catch(e){}
+  try{
+    var _aClick=HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click=function(){
+      var href=this.getAttribute('href')||this.href||'';
+      var t=(this.getAttribute('target')||'').toLowerCase();
+      if(t==='_blank'||t==='_top'||t==='_parent'||badUrl(href)||!allowNav(href)) return;
+      return _aClick.apply(this,arguments);
+    };
+  }catch(e){}
   function killNav(ev,a){
     if(!a)return false;
     var t=(a.getAttribute('target')||'').toLowerCase();
     var href=a.getAttribute('href')||a.href||'';
     var oc=a.getAttribute('onclick')||'';
-    if(t==='_blank'||t==='_top'||t==='_parent'||AD_HREF.test(href)||/window\\.open|target\\s*=\\s*['\\"]_blank/i.test(oc)){
+    if(t==='_blank'||t==='_top'||t==='_parent'||badUrl(href)||!allowNav(href)||AD_HREF.test(href)||/window\\.open|target\\s*=\\s*['\\"]_blank/i.test(oc)){
       ev.preventDefault();ev.stopPropagation();
       try{ev.stopImmediatePropagation();}catch(e){}
       return true;
@@ -160,40 +202,58 @@ iframe[src*="monetag"],iframe[src*="clickadu"],iframe[src*="popcash"]{
   function isPlayControl(el){
     if(!el||!el.closest)return false;
     return !!el.closest(
-      'video,audio,.play-button,.play-wrapper,.vjs-big-play-button,.jw-icon-playback,.jw-display-icon-container,.jw-display,.media-control-button[data-playpause],.plyr__control--overlaid,[data-player],#player,.aplr-player-content,.clappr-player'
+      'video,audio,.play-button,.play-wrapper,.vjs-big-play-button,.jw-icon-playback,.jw-display-icon-container,.jw-display,.media-control-button[data-playpause],.plyr__control--overlaid,[data-player],#player,.aplr-player-content,.clappr-player,.poster,.player-poster'
     );
   }
   ['click','auxclick','mousedown','mouseup','pointerdown','touchstart','touchend'].forEach(function(type){
     document.addEventListener(type,function(ev){
       lockOpen();
-      // Play / player chrome: never allow popup side-effects
       if(isPlayControl(ev.target)){
         lockOpen();
         setTimeout(lockOpen,0);
-        setTimeout(lockOpen,50);
+        setTimeout(lockOpen,30);
+        setTimeout(lockOpen,120);
+        // Kill invisible ad anchors sitting on top of the play button (common on iOS)
+        try{
+          var x=(ev.touches&&ev.touches[0]?ev.touches[0].clientX:ev.clientX);
+          var y=(ev.touches&&ev.touches[0]?ev.touches[0].clientY:ev.clientY);
+          if(typeof x==='number'&&document.elementsFromPoint){
+            document.elementsFromPoint(x,y).forEach(function(node){
+              if(!node||node===ev.target) return;
+              if(node.tagName==='A'||(node.closest&&node.closest('a'))){
+                var a=node.tagName==='A'?node:node.closest('a');
+                var href=a&&(a.getAttribute('href')||a.href)||'';
+                if(a&&(badUrl(href)||(a.getAttribute('target')||'')==='_blank'||!allowNav(href))){
+                  hide(a);
+                  ev.preventDefault();
+                  try{ev.stopImmediatePropagation();}catch(e){}
+                }
+              }
+            });
+          }
+        }catch(e){}
       }
       var a=ev.target&&ev.target.closest&&ev.target.closest('a,[onclick*="window.open"],[data-href]');
       if(a&&a.tagName!=='A'&&a.getAttribute){
         var dh=a.getAttribute('data-href')||'';
-        if(AD_HREF.test(dh)||/window\\.open/i.test(a.getAttribute('onclick')||'')){
+        if(badUrl(dh)||AD_HREF.test(dh)||/window\\.open/i.test(a.getAttribute('onclick')||'')){
           ev.preventDefault();ev.stopPropagation();
           try{ev.stopImmediatePropagation();}catch(e){}
           return;
         }
       }
-      // Block _blank / ad links even when wrapping the play button
       if(a&&a.tagName==='A'&&killNav(ev,a)) return;
       if(isPlayControl(ev.target)&&a&&a.tagName==='A'){
         var href=a.getAttribute('href')||'';
         if(!href||href.charAt(0)==='#'||/javascript:/i.test(href)) return;
-        if(AD_HREF.test(href)||(a.getAttribute('target')||'')==='_blank'){
+        if(badUrl(href)||AD_HREF.test(href)||(a.getAttribute('target')||'')==='_blank'||!allowNav(href)){
           ev.preventDefault();ev.stopPropagation();
           try{ev.stopImmediatePropagation();}catch(e){}
         }
       }
     },true);
   });
-  var re=/acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|monetag|pavanesbedizen|clickadu|popcash|\\/ads\\//i;
+  var re=/guruvpnapp|acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|monetag|pavanesbedizen|clickadu|popcash|\\/ads\\//i;
   var uiHide=/bein\\s*max|تحديث|مشاركة|share|refresh|بث\\s*\\d+/i;
   function hide(el){
     if(!el||!el.style)return;
@@ -208,13 +268,15 @@ iframe[src*="monetag"],iframe[src*="clickadu"],iframe[src*="popcash"]{
   }
   function scrubOverlays(){
     try{
+      document.querySelectorAll('a[href*="guruvpnapp"],a[href*="fifa-wc"],a[href*="sub_id="]').forEach(hide);
       document.querySelectorAll('a[target="_blank"],a[target="_top"],a[target="_parent"]').forEach(function(a){
+        var href=a.getAttribute('href')||a.href||'';
         a.removeAttribute('target');
-        if(AD_HREF.test(a.getAttribute('href')||a.href||'')) hide(a);
+        if(badUrl(href)||AD_HREF.test(href)||!allowNav(href)) hide(a);
       });
       document.querySelectorAll('script[src],iframe[src],img[src],a[href]').forEach(function(el){
         var v=el.src||el.href||'';
-        if(re.test(v)){el.remove();}
+        if(re.test(v)||badUrl(v)){ if(el.tagName==='A') hide(el); else el.remove(); }
       });
       document.querySelectorAll('.aplr-menu,.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,.aplr-icon-refresh,.aplr-icon-share,a[href*="serv="]').forEach(hide);
       document.querySelectorAll('a.aplr-link,button.aplr-link,.aplr-action').forEach(function(el){

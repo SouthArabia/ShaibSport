@@ -226,7 +226,7 @@ export function shieldScript(pageOriginHost = "") {
   function bad(u){
     u=String(u||'');
     if(!u || u.charAt(0)==='#' || u.indexOf('javascript:')===0 || u.indexOf('blob:')===0 || u.indexOf('data:')===0) return false;
-    return isAd(host(u)) || /googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|clickunder|popads|propellerads|exoclick|trafficjunky|\\/ads\\/|adserver|monetag|pavanesbedizen|acscdn|baillieumbered|histats|statcounter/i.test(u);
+    return isAd(host(u)) || /guruvpnapp|fifa-wc-2026|googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|clickunder|popads|propellerads|exoclick|trafficjunky|\\/ads\\/|adserver|monetag|pavanesbedizen|acscdn|baillieumbered|histats|statcounter/i.test(u);
   }
   function sameSite(u){
     try{

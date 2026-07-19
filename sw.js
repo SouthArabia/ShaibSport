@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v65";
+const CACHE = "shaib-sport-pwa-v66";
 const ASSETS = [
   "./",
   "./index.html",
@@ -270,6 +270,18 @@ self.addEventListener("fetch", (event) => {
         credentials: "omit",
         redirect: "follow",
       }).catch(() => fetch(request))
+    );
+    return;
+  }
+
+  // Hard-block known play-button popup hosts (iOS Safari new tabs / navigations)
+  if (host.includes("guruvpnapp") || /fifa-wc-2026/i.test(url.pathname)) {
+    event.respondWith(
+      new Response("", {
+        status: 204,
+        statusText: "Blocked popup",
+        headers: { "X-Shaib-AdBlock": "1" },
+      })
     );
     return;
   }
