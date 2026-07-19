@@ -12,9 +12,9 @@ export function isLoggedIn() {
 }
 
 export function login(username, password) {
-  const u = String(username || "").trim();
-  const p = String(password || "").trim();
-  if (u === USER && p === PASS) {
+  const u = String(username || "").trim().toLowerCase();
+  const p = String(password || "").trim().toLowerCase();
+  if (u === USER.toLowerCase() && p === PASS.toLowerCase()) {
     sessionStorage.setItem(AUTH_KEY, "1");
     return true;
   }
