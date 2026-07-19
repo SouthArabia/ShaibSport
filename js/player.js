@@ -45,6 +45,14 @@ function isDirectPlayerUrl(url = "") {
   return /syria-player|shootsync|albaplayer|beinmax/i.test(url);
 }
 
+/** Same-origin SW proxy strips ads while keeping a real origin (srcdoc is blocked by players). */
+function proxiedPlayerUrl(url) {
+  return new URL(
+    `./__shaib_player?u=${encodeURIComponent(url)}`,
+    location.href
+  ).href;
+}
+
 function normalizeNavUrl(raw) {
   const trimmed = String(raw || "").trim();
   if (!trimmed) return null;
@@ -158,14 +166,17 @@ export function createPlayerController(opts) {
   }
 
   async function mountShielded(url, injectExtra = "") {
-    // Direct embed players — skip proxy/srcdoc (proxies hang; sandbox breaks playback)
+    ensurePlayerFilters(); // background; seeds already active
+
+    // Stream hosts: same-origin SW proxy (strips ads; avoids null-origin srcdoc kill)
     if (isDirectPlayerUrl(url)) {
-      const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
+      const frame = configureFrame(
+        mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
+      );
       currentIframe = frame;
-      return { frame, mode: "direct" };
+      return { frame, mode: "proxied" };
     }
 
-    ensurePlayerFilters(); // background; seeds already active
     const html = await fetchHtml(url);
     if (html && /<html|<body|<div|<script/i.test(html)) {
       let cleaned = cleanHtml(html, url);
@@ -184,7 +195,7 @@ export function createPlayerController(opts) {
       return { frame, mode: "shielded" };
     }
 
-    // Last resort: direct iframe (no sandbox / no referrer hiding — players reject both)
+    // Last resort: direct iframe (no sandbox / no referrer hiding)
     const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
     currentIframe = frame;
     return { frame, mode: "direct" };

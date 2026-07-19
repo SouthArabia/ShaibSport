@@ -1,8 +1,9 @@
 /* Shaib Sport PWA — standalone service worker (app shell + ad blocking) */
 importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
+importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v25";
+const CACHE = "shaib-sport-pwa-v26";
 const ASSETS = [
   "./",
   "./index.html",
@@ -24,6 +25,7 @@ const ASSETS = [
   "./js/filter-engine.js",
   "./js/global-adblock.js",
   "./js/bot-guard.js",
+  "./js/player-proxy-sw.js",
   "./js/stream-detect.js",
   "./js/player.js",
   "./js/app.js",
@@ -87,6 +89,9 @@ const ALLOW_PARTS = [
   "alarabiya",
   "aljazeera",
   "thehlive",
+  "okcdn",
+  "vkcdn",
+  "userapi",
   "akamai",
   "cloudfront",
   "cloudflare",
@@ -104,6 +109,7 @@ const ALLOW_PARTS = [
   "thesportsdb",
   "githubusercontent",
   "corsproxy",
+  "cors.sh",
   "allorigins",
   "365scores",
   "easylist",
@@ -143,7 +149,7 @@ function isAdHost(host) {
     if (i === -1) break;
     h = h.slice(i + 1);
   }
-  return /(^|\.)ads?\d*\.|doubleclick|adservice|adsystem|pagead|popads|propeller|exoclick|taboola|outbrain|criteo|prebid|adnxs|googlesyndication/.test(
+  return /(^|\.)ads?\d*\.|doubleclick|adservice|adsystem|pagead|popads|propeller|exoclick|taboola|outbrain|criteo|prebid|adnxs|googlesyndication|acscdn|baillieumbered|histats|statcounter/.test(
     host
   );
 }
@@ -157,7 +163,10 @@ function isAdRequest(url) {
     u.includes("doubleclick.net") ||
     u.includes("/pagead/") ||
     u.includes("adsbygoogle") ||
-    u.includes("popunder")
+    u.includes("popunder") ||
+    u.includes("acscdn.com") ||
+    u.includes("aclib.js") ||
+    u.includes("baillieumbered")
   );
 }
 
@@ -204,6 +213,15 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET" && request.method !== "HEAD") return;
 
+  const url = new URL(request.url);
+  const sameOrigin = url.origin === self.location.origin;
+
+  // Same-origin player proxy — fetch remote HTML, strip ads, keep real origin/referrer
+  if (sameOrigin && typeof self.SHAIB_IS_PLAYER_PROXY === "function" && self.SHAIB_IS_PLAYER_PROXY(request.url)) {
+    event.respondWith(self.SHAIB_HANDLE_PLAYER_PROXY(request));
+    return;
+  }
+
   if (isAdRequest(request.url)) {
     event.respondWith(
       new Response("", {
@@ -214,9 +232,6 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
-
-  const url = new URL(request.url);
-  const sameOrigin = url.origin === self.location.origin;
 
   // Bundled config / filters / vendor — cache first
   if (
@@ -246,6 +261,8 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("githubusercontent.com") ||
     url.hostname.includes("corsproxy") ||
     url.hostname.includes("allorigins") ||
+    url.hostname.includes("codetabs.com") ||
+    url.hostname.includes("cors.sh") ||
     url.hostname.includes("jsdelivr.net") ||
     url.hostname.includes("flagcdn.com") ||
     url.hostname.includes("flagsapi.com") ||
