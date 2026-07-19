@@ -131,21 +131,65 @@ export function createPlayerController(opts) {
 
   const prevBtn = () => document.getElementById("player-prev");
   const nextBtn = () => document.getElementById("player-next");
+  const dockEl = () => document.getElementById("player-dock");
+  const sheetEl = () => document.getElementById("player-sheet");
+  let liveDockActive = false;
+
+  function exitPlayer() {
+    document.getElementById("player-close")?.click();
+  }
+
+  function setLiveDock(visible) {
+    liveDockActive = !!visible;
+    const dock = dockEl();
+    const sheet = sheetEl();
+    if (dock) dock.hidden = !visible;
+    sheet?.classList.toggle("has-live-dock", !!visible);
+    if (!visible) return;
+
+    const hasNav = !!(playlist && playlist.items && playlist.items.length > 1);
+    const prev = document.getElementById("dock-prev");
+    const next = document.getElementById("dock-next");
+    const exit = document.getElementById("dock-exit");
+    const meta = document.getElementById("dock-meta");
+    if (prev) {
+      prev.disabled = !hasNav;
+      prev.textContent = `‹ ${t("playerPrev") || "Prev"}`;
+      prev.hidden = false;
+    }
+    if (next) {
+      next.disabled = !hasNav;
+      next.textContent = `${t("playerNext") || "Next"} ›`;
+      next.hidden = false;
+    }
+    if (exit) exit.textContent = t("playerExit") || "Exit";
+    if (meta) {
+      if (hasNav) {
+        meta.hidden = false;
+        meta.textContent = `${playlist.index + 1} / ${playlist.items.length}`;
+      } else {
+        meta.hidden = true;
+        meta.textContent = "";
+      }
+    }
+  }
 
   function updatePlaylistNav() {
     const has = !!(playlist && playlist.items && playlist.items.length > 1);
     const prev = prevBtn();
     const next = nextBtn();
+    // Top bar nav is hidden when bottom live dock is showing
     if (prev) {
-      prev.hidden = !has;
+      prev.hidden = liveDockActive || !has;
       prev.disabled = !has;
       prev.title = t("playerPrev") || "Previous";
     }
     if (next) {
-      next.hidden = !has;
+      next.hidden = liveDockActive || !has;
       next.disabled = !has;
       next.title = t("playerNext") || "Next";
     }
+    if (liveDockActive) setLiveDock(true);
   }
 
   function clear() {
@@ -161,32 +205,11 @@ export function createPlayerController(opts) {
   function playHls(title, url) {
     titleEl.textContent = title;
     clear();
+    // Bottom dock stays outside the video so users can switch/exit while watching
+    setLiveDock(true);
+
     const wrap = document.createElement("div");
     wrap.className = "player-stack";
-    const tools = document.createElement("div");
-    tools.className = "player-tools";
-    if (playlist && playlist.items.length > 1) {
-      const idx = playlist.index + 1;
-      const total = playlist.items.length;
-      const status = document.createElement("div");
-      status.className = "player-status";
-      status.textContent = `${idx} / ${total}`;
-      wrap.appendChild(status);
-
-      const prev = document.createElement("button");
-      prev.type = "button";
-      prev.className = "player-tool-btn";
-      prev.textContent = `‹ ${t("playerPrev") || "Prev"}`;
-      prev.addEventListener("click", () => goPlaylist(-1));
-      const next = document.createElement("button");
-      next.type = "button";
-      next.className = "player-tool-btn";
-      next.textContent = `${t("playerNext") || "Next"} ›`;
-      next.addEventListener("click", () => goPlaylist(1));
-      tools.appendChild(prev);
-      tools.appendChild(next);
-      wrap.appendChild(tools);
-    }
 
     const stage = document.createElement("div");
     stage.className = "player-stage";
@@ -516,6 +539,9 @@ export function createPlayerController(opts) {
     } else if (!tile.keepPlaylist) {
       playlist = null;
     }
+
+    // Non-live players: hide bottom dock (live opens it in playHls)
+    if (tile.kind !== "live") setLiveDock(false);
     updatePlaylistNav();
 
     // Kick filter refresh in background — never gate the player on it
@@ -539,8 +565,24 @@ export function createPlayerController(opts) {
   function bindPlaylistButtons() {
     prevBtn()?.addEventListener("click", () => goPlaylist(-1));
     nextBtn()?.addEventListener("click", () => goPlaylist(1));
+    document.getElementById("dock-prev")?.addEventListener("click", () => goPlaylist(-1));
+    document.getElementById("dock-next")?.addEventListener("click", () => goPlaylist(1));
+    document.getElementById("dock-exit")?.addEventListener("click", () => exitPlayer());
   }
   bindPlaylistButtons();
 
-  return { openTile, playHls, clear, mountLockedIframe, goPlaylist, updatePlaylistNav };
+  const originalClear = clear;
+  function clearAll() {
+    setLiveDock(false);
+    originalClear();
+  }
+
+  return {
+    openTile,
+    playHls,
+    clear: clearAll,
+    mountLockedIframe,
+    goPlaylist,
+    updatePlaylistNav,
+  };
 }

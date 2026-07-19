@@ -333,6 +333,9 @@ function closePlayer() {
     $("#player-body").innerHTML = "";
   }
   $("#player-sheet").hidden = true;
+  $("#player-sheet")?.classList.remove("has-live-dock");
+  const dock = $("#player-dock");
+  if (dock) dock.hidden = true;
   const prev = $("#player-prev");
   const next = $("#player-next");
   if (prev) prev.hidden = true;
@@ -951,7 +954,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=45"),
+      navigator.serviceWorker.register("./sw.js?v=46"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

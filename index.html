@@ -268,6 +268,12 @@
       <button class="icon-btn player-nav" id="player-next" type="button" hidden aria-label="Next">›</button>
     </div>
     <div class="player-body" id="player-body"></div>
+    <div class="player-dock" id="player-dock" hidden>
+      <button type="button" class="player-dock-btn" id="dock-prev">‹ السابق</button>
+      <button type="button" class="player-dock-btn player-dock-exit" id="dock-exit">إغلاق</button>
+      <button type="button" class="player-dock-btn" id="dock-next">التالي ›</button>
+      <div class="player-dock-meta" id="dock-meta" hidden></div>
+    </div>
   </div>
 
   <nav class="tabbar" aria-label="Tabs">
@@ -298,7 +304,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=45";
+      var SW_URL = "./sw.js?v=46";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -316,7 +322,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=45"></script>
+  <script type="module" src="./js/app.js?v=46"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
