@@ -74,19 +74,31 @@ const SHIELD_HOST_CAP = 30_000;
 const SHIELD_COSMETIC_CAP = 6_000;
 
 /**
- * Sync cosmetics for player shields only.
- * Do NOT copy tens of thousands of hosts onto the main thread — engineIsAdHost
- * already reads the filter-engine Set (keeps tabs responsive).
+ * Sync EasyList / filter-engine cosmetics (+ host snapshot for srcdoc shields).
  */
 export function syncAdblockFromEngine() {
   try {
     const cos = getCosmeticList();
     if (cos.length) {
-      // Keep cosmetics modest for srcdoc size / main-thread cost
       const merged = new Set([...EXTRA_COSMETIC_BASE, ...cos.slice(0, 2500)]);
       cosmeticList = [...merged];
     }
+    const hosts = getHostList();
+    if (hosts.length > hostSet.size) {
+      // Keep seed + EasyList hosts available for injected tile shields
+      hostSet = new Set(hosts.slice(0, SHIELD_HOST_CAP).map((h) => String(h).toLowerCase()));
+    }
   } catch (_) {}
+}
+
+/** EasyList-backed CSS + network shield to inject into every tile player. */
+export function playerAdblockInject(pageUrl = "") {
+  syncAdblockFromEngine();
+  let pageHost = "";
+  try {
+    pageHost = new URL(pageUrl).hostname;
+  } catch (_) {}
+  return `${cosmeticStyleTag()}\n${shieldScript(pageHost)}`;
 }
 
 export function hostnameOf(url) {
@@ -154,8 +166,15 @@ html,body{overflow-x:hidden!important}
 }
 
 function shieldHostMap() {
-  // Prefer shorter apex-ish domains first so cap keeps high-value rules
-  const sorted = [...hostSet].sort((a, b) => a.length - b.length || a.localeCompare(b));
+  // Prefer EasyList / filter-engine hosts for every tile shield inject
+  let list = [];
+  try {
+    list = getHostList();
+  } catch (_) {}
+  if (!list.length) list = [...hostSet];
+  const sorted = list
+    .map((h) => String(h).toLowerCase())
+    .sort((a, b) => a.length - b.length || a.localeCompare(b));
   const map = Object.create(null);
   let n = 0;
   for (const h of sorted) {

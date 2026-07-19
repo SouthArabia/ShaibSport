@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v50";
+const CACHE = "shaib-sport-pwa-v51";
 const ASSETS = [
   "./",
   "./index.html",
@@ -178,7 +178,16 @@ self.addEventListener("message", (event) => {
   if (!data || data.type !== "SHAIB_FILTER_UPDATE") return;
   if (!Array.isArray(data.hosts)) return;
   hostSet = new Set(data.hosts.map((h) => String(h).toLowerCase()));
+  // Expose for player-proxy EasyList stripping / inject
+  self.SHAIB_HOST_SET = hostSet;
+  self.SHAIB_IS_AD_REQUEST = isAdRequest;
+  self.SHAIB_GET_AD_HOSTS = () => Array.from(hostSet);
 });
+
+// Defaults for player-proxy before first EasyList push
+self.SHAIB_HOST_SET = hostSet;
+self.SHAIB_IS_AD_REQUEST = isAdRequest;
+self.SHAIB_GET_AD_HOSTS = () => Array.from(hostSet);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

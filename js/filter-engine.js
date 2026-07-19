@@ -398,11 +398,24 @@ export async function prepareFilters({ force = false, onProgress } = {}) {
     state.progress.total = FILTER_LISTS.length;
     state.progress.done = 0;
 
+    // Load EasyList / EasyPrivacy before the rest so tile shields get them ASAP
+    const priority = FILTER_LISTS.filter((l) => l.priority);
+    const rest = FILTER_LISTS.filter((l) => !l.priority);
+    for (const list of priority) {
+      await loadOne(list);
+      state.progress.done += 1;
+      notify();
+    }
+    await pushToServiceWorker();
+
     const batchSize = 3;
-    for (let i = 0; i < FILTER_LISTS.length; i += batchSize) {
-      const batch = FILTER_LISTS.slice(i, i + batchSize);
+    for (let i = 0; i < rest.length; i += batchSize) {
+      const batch = rest.slice(i, i + batchSize);
       await Promise.all(batch.map((list) => loadOne(list)));
-      state.progress.done = Math.min(FILTER_LISTS.length, i + batch.length);
+      state.progress.done = Math.min(
+        FILTER_LISTS.length,
+        priority.length + i + batch.length
+      );
       notify();
       await new Promise((r) => setTimeout(r, 0));
     }

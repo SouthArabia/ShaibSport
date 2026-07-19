@@ -302,7 +302,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=50";
+      var SW_URL = "./sw.js?v=51";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -320,7 +320,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=50"></script>
+  <script type="module" src="./js/app.js?v=51"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

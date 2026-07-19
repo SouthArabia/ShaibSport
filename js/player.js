@@ -3,6 +3,7 @@ import {
   cleanHtml,
   isAdUrl,
   syncAdblockFromEngine,
+  playerAdblockInject,
 } from "./adblock.js";
 import { prepareFilters } from "./filter-engine.js";
 import {
@@ -12,15 +13,19 @@ import {
   autoPlayScript,
 } from "./stream-detect.js";
 
-/** Never block the player on filter downloads — seed lists already work. */
+/** Prefer EasyList ready; seed lists still work if network is slow. */
 async function ensurePlayerFilters() {
   try {
     await Promise.race([
       prepareFilters(),
-      new Promise((r) => setTimeout(r, 600)),
+      new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
   syncAdblockFromEngine();
+}
+
+function tileAdblockExtra(url = "") {
+  return playerAdblockInject(url);
 }
 
 function withTimeout(promise, ms) {
@@ -265,9 +270,10 @@ export function createPlayerController(opts) {
     } catch (_) {}
   }
 
-  function playHls(title, url) {
+  async function playHls(title, url) {
     titleEl.textContent = title;
     clear();
+    await ensurePlayerFilters();
     // Bottom dock stays outside the video so users can switch/exit while watching
     setLiveDock(true);
 
@@ -326,9 +332,11 @@ export function createPlayerController(opts) {
   }
 
   async function mountShielded(url, injectExtra = "") {
-    ensurePlayerFilters(); // background; seeds already active
+    await ensurePlayerFilters(); // EasyList + other lists for every tile
 
-    // Stream hosts: same-origin SW proxy (strips ads; avoids null-origin srcdoc kill)
+    const easylistShield = tileAdblockExtra(url);
+
+    // Stream hosts: same-origin SW proxy (EasyList hosts applied in SW + proxy shield)
     if (isDirectPlayerUrl(url)) {
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
@@ -339,13 +347,20 @@ export function createPlayerController(opts) {
 
     const html = await fetchHtml(url);
     if (html && /<html|<body|<div|<script/i.test(html)) {
-      let cleaned = cleanHtml(html, url);
+      let cleaned = cleanHtml(html, url); // includes EasyList shield
       if (injectExtra) {
         const extras = `<script>${injectExtra}</script>`;
         if (/<\/body>/i.test(cleaned)) {
           cleaned = cleaned.replace(/<\/body>/i, `${extras}</body>`);
         } else {
           cleaned += extras;
+        }
+      }
+      if (!cleaned.includes("shaib-adblock-shield") && easylistShield) {
+        if (/<head[^>]*>/i.test(cleaned)) {
+          cleaned = cleaned.replace(/<head[^>]*>/i, (m) => `${m}\n${easylistShield}`);
+        } else {
+          cleaned = `${easylistShield}${cleaned}`;
         }
       }
       const frame = configureFrame(document.createElement("iframe"));
@@ -377,7 +392,7 @@ export function createPlayerController(opts) {
   }
 
   function openLive(tile) {
-    playHls(tile.title, tile.url);
+    return playHls(tile.title, tile.url);
   }
 
   /** Browser / Fox — always shielded (continuous AdBlock) */
@@ -611,6 +626,8 @@ export function createPlayerController(opts) {
 
   async function openTile(tile) {
     unlockMediaPlayback();
+    // Kick EasyList load for every tile (Watch / Live TV / domains)
+    ensurePlayerFilters().catch(() => {});
     titleEl.textContent = tile.title;
     if (Array.isArray(tile.playlist) && tile.playlist.length) {
       playlist = {

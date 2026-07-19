@@ -24,12 +24,17 @@
 
   function stripAds(html) {
     let out = String(html || "");
-    // Remove ad scripts / iframes / pixels
-    out = out.replace(/<script\b[^>]*src=["'][^"']*["'][^>]*>\s*<\/script>/gi, (full) =>
-      AD_SRC_RE.test(full) ? "<!-- shaib: ad script removed -->" : full
+    const isAdReq =
+      typeof global.SHAIB_IS_AD_REQUEST === "function"
+        ? global.SHAIB_IS_AD_REQUEST
+        : (u) => AD_SRC_RE.test(String(u || ""));
+
+    // Remove ad scripts / iframes / pixels (EasyList hosts via SW + regex)
+    out = out.replace(/<script\b[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (full, src) =>
+      AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad script removed -->" : full
     );
-    out = out.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, (full) =>
-      AD_SRC_RE.test(full) ? "<!-- shaib: ad iframe removed -->" : full
+    out = out.replace(/<iframe\b[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/iframe>/gi, (full, src) =>
+      AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad iframe removed -->" : full
     );
     out = out.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (full) => {
       if (/function\s+_kill|SB_Blocked|تنبيه حماية/i.test(full)) {
@@ -47,6 +52,46 @@
     // Naked ad loader leftovers
     out = out.replace(/aclib\.run(?:Pop|Banner)\([\s\S]*?\);?/gi, "/* shaib: aclib removed */");
     return out;
+  }
+
+  function easyListRuntimeShield() {
+    const hosts = (
+      typeof global.SHAIB_GET_AD_HOSTS === "function" ? global.SHAIB_GET_AD_HOSTS() : []
+    ).slice(0, 12000);
+    const map = Object.create(null);
+    for (const h of hosts) map[String(h).toLowerCase()] = 1;
+    return `<script id="shaib-easylist-runtime">
+(function(){
+  if(window.__shaibEasyListRuntime)return;window.__shaibEasyListRuntime=true;
+  var blocked=${JSON.stringify(map)};
+  function host(u){try{return new URL(u,location.href).hostname.toLowerCase()}catch(e){return ''}}
+  function isAd(h){
+    if(!h)return false;
+    var cur=h;
+    while(cur){ if(blocked[cur]) return true; var i=cur.indexOf('.'); if(i===-1)break; cur=cur.slice(i+1); }
+    return /(^|\\.)ads?\\d*\\.|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|taboola|outbrain|adnxs|prebid|acscdn|baillieumbered/i.test(h);
+  }
+  function bad(u){ u=String(u||''); if(!u||u.indexOf('blob:')===0||u.indexOf('data:')===0)return false; return isAd(host(u))||/googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|aclib|acscdn/i.test(u); }
+  try{window.open=function(){return null;};}catch(e){}
+  try{
+    var _x=XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open=function(m,u){ if(bad(u)){this.__b=1;u='about:blank';} return _x.apply(this,arguments); };
+  }catch(e){}
+  try{
+    var _f=window.fetch;
+    window.fetch=function(input,init){ var u=typeof input==='string'?input:(input&&input.url)||''; if(bad(u)) return Promise.reject(new TypeError('blocked')); return _f.apply(this,arguments); };
+  }catch(e){}
+  function scrub(){
+    try{
+      document.querySelectorAll('script[src],iframe[src],img[src]').forEach(function(el){
+        var v=el.src||''; if(bad(v)) el.remove();
+      });
+    }catch(e){}
+  }
+  scrub(); setInterval(scrub,900);
+  try{new MutationObserver(scrub).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+})();
+</script>`;
   }
 
   function injectShield(html, pageUrl) {
@@ -143,10 +188,11 @@ a[href*="location.reload"]{
   try{new MutationObserver(function(){kick();}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
 })();
 </script>`;
+    const easy = easyListRuntimeShield();
     if (/<head[^>]*>/i.test(html)) {
-      return html.replace(/<head[^>]*>/i, (m) => `${m}\n${base}\n${shield}`);
+      return html.replace(/<head[^>]*>/i, (m) => `${m}\n${base}\n${shield}\n${easy}`);
     }
-    return `<!DOCTYPE html><html><head>${base}\n${shield}</head><body>${html}</body></html>`;
+    return `<!DOCTYPE html><html><head>${base}\n${shield}\n${easy}</head><body>${html}</body></html>`;
   }
 
   function isAllowedPlayerUrl(raw) {

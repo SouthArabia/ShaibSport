@@ -27,9 +27,25 @@ export const FILTER_LISTS = [
     type: "json-domains",
   },
 
-  // Community lists (exact URLs)
-  { id: "easylist", url: "https://easylist.to/easylist/easylist.txt", type: "abp" },
-  { id: "easyprivacy", url: "https://easylist.to/easylist/easyprivacy.txt", type: "abp" },
+  // EasyList first — applied to every tile player shield
+  {
+    id: "easylist",
+    urls: [
+      "https://easylist.to/easylist/easylist.txt",
+      "https://easylist-downloads.adblockplus.org/easylist.txt",
+    ],
+    type: "abp",
+    priority: true,
+  },
+  {
+    id: "easyprivacy",
+    urls: [
+      "https://easylist.to/easylist/easyprivacy.txt",
+      "https://easylist-downloads.adblockplus.org/easyprivacy.txt",
+    ],
+    type: "abp",
+    priority: true,
+  },
   {
     id: "easylist-cookie",
     urls: [
