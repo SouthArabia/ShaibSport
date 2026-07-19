@@ -2,7 +2,7 @@
 importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 
-const CACHE = "shaib-sport-pwa-v24";
+const CACHE = "shaib-sport-pwa-v25";
 const ASSETS = [
   "./",
   "./index.html",
@@ -56,7 +56,8 @@ function withNoIndex(response) {
       "noindex, nofollow, noarchive, nosnippet, noimageindex, nocache"
     );
     headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("Referrer-Policy", "no-referrer");
+    // Must not be no-referrer — embedded players treat that as "إخفاء المصدر" and refuse to play
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

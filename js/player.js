@@ -77,10 +77,10 @@ function toolbar(buttons) {
 }
 
 /**
- * Player iframe. Direct stream hosts skip sandbox (sandbox breaks HLS/players).
- * Fallback sandboxed frames block popups + top-level redirects.
+ * Player iframe. Stream hosts reject sandbox + no-referrer ("إخفاء المصدر").
+ * Never set referrerpolicy=no-referrer on embeds — players block that.
  */
-function mountLockedIframe(url, { sandbox = true } = {}) {
+function mountLockedIframe(url, { sandbox = false } = {}) {
   const frame = document.createElement("iframe");
   frame.className = "player-iframe";
   frame.src = url;
@@ -89,7 +89,8 @@ function mountLockedIframe(url, { sandbox = true } = {}) {
     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
   );
   frame.setAttribute("allowfullscreen", "");
-  frame.setAttribute("referrerpolicy", "no-referrer");
+  // Explicit referrer — empty/no-referrer triggers syria-player "إخفاء المصدر" block
+  frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
   if (sandbox) {
     // NO allow-popups, NO allow-top-navigation
     frame.setAttribute(
@@ -106,7 +107,7 @@ function configureFrame(frame) {
     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
   );
   frame.setAttribute("allowfullscreen", "");
-  frame.setAttribute("referrerpolicy", "no-referrer");
+  frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
   return frame;
 }
 
@@ -183,10 +184,10 @@ export function createPlayerController(opts) {
       return { frame, mode: "shielded" };
     }
 
-    // Last resort: sandboxed direct iframe (no endless proxy retry)
-    const frame = configureFrame(mountLockedIframe(url, { sandbox: true }));
+    // Last resort: direct iframe (no sandbox / no referrer hiding — players reject both)
+    const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
     currentIframe = frame;
-    return { frame, mode: "locked" };
+    return { frame, mode: "direct" };
   }
 
   function listenForStreams(onStream, { once = true } = {}) {

@@ -29,9 +29,7 @@ export async function loadShieldedIframe(iframe, url) {
       return;
     }
   } catch (_) {}
-  iframe.setAttribute(
-    "sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-presentation"
-  );
+  iframe.removeAttribute("sandbox");
+  iframe.removeAttribute("referrerpolicy");
   iframe.src = url;
 }

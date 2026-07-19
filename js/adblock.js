@@ -468,7 +468,7 @@ export async function createBlockedWebFrame(url, onStatus) {
     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
   );
   frame.setAttribute("allowfullscreen", "");
-  frame.setAttribute("referrerpolicy", "no-referrer");
+  // Do not set no-referrer / sandbox — stream players refuse both
 
   if (html && /<html|<body|<div|<script/i.test(html)) {
     frame.srcdoc = cleanHtml(html, url);
@@ -478,10 +478,6 @@ export async function createBlockedWebFrame(url, onStatus) {
     return wrap;
   }
 
-  frame.setAttribute(
-    "sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
-  );
   frame.src = url;
   stage.appendChild(frame);
   bar.textContent = "AdBlock on";
