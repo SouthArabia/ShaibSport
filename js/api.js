@@ -192,7 +192,7 @@ export async function fetchTodayBoard() {
     d.setUTCDate(d.getUTCDate() + i);
     try {
       const json = await fetchJSON(`${ESPN}/fifa.world/scoreboard?dates=${espnDay(d)}`);
-      const list = parseEspnEvents(json, "International");
+      const list = parseEspnEvents(json, "World Cup");
       out.push(...list);
       if (i === 0 && list.length) break;
       if (out.length >= 8) break;
@@ -218,7 +218,7 @@ export async function fetchInternationalBoard() {
 
   try {
     const world = await fetchJSON(`${ESPN}/fifa.world/scoreboard?dates=${range}`);
-    chunks.push(parseEspnEvents(world, "International"));
+    chunks.push(parseEspnEvents(world, "World Cup"));
   } catch (_) {}
 
   try {

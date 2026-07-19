@@ -173,7 +173,7 @@
   <main class="page" data-page="international" hidden>
     <div class="section-head">
       <div>
-        <h1 data-i18n="intlTitle">الدولي والإقصاء</h1>
+        <h1 data-i18n="intlTitle">كأس العالم</h1>
         <p data-i18n="intlSub">الفرق المتأهلة ورسم الإقصاء</p>
       </div>
     </div>
@@ -183,7 +183,7 @@
 
     <h2 id="bracket-label" style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">رسم الإقصاء</h2>
     <div class="bracket-frame-wrap">
-      <iframe id="bracket-frame" title="International bracket" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <iframe id="bracket-frame" title="World Cup bracket" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
 
     <h2 style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">Fixtures</h2>
@@ -262,7 +262,7 @@
     </button>
     <button type="button" data-tab="international">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6v5H4zM14 6h6v5h-6zM9 14h6v5H9z"/><path d="M7 11v3h10v-3"/></svg>
-      <span>International</span>
+      <span>World Cup</span>
     </button>
     <button type="button" data-tab="iptv">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H4z"/><path d="m8 19 4-4 4 4"/><path d="M12 15v4"/></svg>
@@ -279,7 +279,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=27";
+      var SW_URL = "./sw.js?v=28";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -297,7 +297,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=27"></script>
+  <script type="module" src="./js/app.js?v=28"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
