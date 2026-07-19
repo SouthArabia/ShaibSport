@@ -360,7 +360,7 @@ export function createPlayerController(opts) {
   }
 
   /**
-   * Ch1: SW proxy for popup-kill + muted autoplay inject.
+   * Ch1/Ch2: SW proxy for popup-kill + muted autoplay inject.
    * If SW is not controlling (app shell) or proxy 502s, fall back to direct — no sandbox.
    */
   function mountProxiedWithDirectFallback(url) {
@@ -436,17 +436,11 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch2 (kore10): direct AlbaPlayer embed
-      if (/kore10/i.test(url)) {
-        const frame = configureFrame(
-          mountLockedIframe(url, { sandbox: false })
-        );
-        currentIframe = frame;
-        return { frame, mode: "direct-ch2" };
-      }
-      // Ch1 (kora-sami/bmax1): SW proxy for popup-kill + autoplay; direct fallback
-      if (/kora-sami|splplayer/i.test(url)) {
-        return mountProxiedWithDirectFallback(url);
+      // Ch1 (kora-sami) + Ch2 (kore10): SW proxy = popup-kill + autoplay; direct fallback
+      if (/kora-sami|splplayer|kore10/i.test(url)) {
+        const mounted = mountProxiedWithDirectFallback(url);
+        mounted.mode = /kore10/i.test(url) ? "proxied-ch2" : "proxied-ch1";
+        return mounted;
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(
