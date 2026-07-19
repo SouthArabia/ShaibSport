@@ -57,31 +57,6 @@ async function fetchHtml(url) {
   return null;
 }
 
-/** Pull HLS URLs from kora-sami / AlbaPlayer pages (skip ad/player wrappers). */
-function extractPlayerStreams(html) {
-  const out = [];
-  const seen = new Set();
-  const add = (raw) => {
-    const u = String(raw || "").trim();
-    if (!u || seen.has(u)) return;
-    if (/\.(css|js|png|jpe?g|gif|webp|svg)($|\?)/i.test(u)) return;
-    if (!/\.m3u8($|\?)|\/hls\/|\.m3u($|\?)/i.test(u)) return;
-    seen.add(u);
-    out.push(u);
-  };
-  const htmlStr = String(html || "");
-  for (const m of htmlStr.matchAll(/data-server-url=["']([^"']+)["']/gi)) {
-    add(m[1]);
-  }
-  for (const m of htmlStr.matchAll(/source\s*:\s*["'](https?:\/\/[^"']+)["']/gi)) {
-    add(m[1]);
-  }
-  for (const m of htmlStr.matchAll(/["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/gi)) {
-    add(m[1]);
-  }
-  return out;
-}
-
 function isDirectPlayerUrl(url = "") {
   // worldchampion (ch3) is treated as a site tile: EasyList + no popups/redirects
   return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|kore10/i.test(
@@ -461,21 +436,19 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
+      // Ch1 (kora-sami): direct embed — proxy/native-HLS experiments broke playback
+      if (/kora-sami|splplayer/i.test(url)) {
+        const frame = configureFrame(
+          mountLockedIframe(url, { sandbox: false })
+        );
+        currentIframe = frame;
+        return { frame, mode: "direct-ch1" };
+      }
       // Ch2 (kore10): SW proxy = popup-kill + autoplay; direct fallback
-      // Ch1 uses native HLS in openBrowser (avoids iOS play-button popups)
       if (/kore10/i.test(url)) {
         const mounted = mountProxiedWithDirectFallback(url);
         mounted.mode = "proxied-ch2";
         return mounted;
-      }
-      if (/kora-sami|splplayer/i.test(url)) {
-        // Last resort iframe: sandbox without allow-popups (blocks iOS new tabs)
-        const frame = configureFrame(
-          mountLockedIframe(url, { noPopups: true }),
-          { noPopups: true }
-        );
-        currentIframe = frame;
-        return { frame, mode: "sandboxed-ch1-fallback" };
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(
@@ -578,29 +551,6 @@ export function createPlayerController(opts) {
 
   /** Syria / stream browser tiles — player proxy path */
   async function openBrowser(tile) {
-    // Ch1 (kora-sami): play HLS natively — third-party player opens iOS Safari popups
-    if (/kora-sami|splplayer/i.test(tile.url)) {
-      titleEl.textContent = tile.title;
-      clear();
-      body.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
-      try {
-        const html = await fetchHtml(tile.url);
-        const streams = extractPlayerStreams(html || "");
-        if (streams.length) {
-          playlist = {
-            items: streams.map((url, i) => ({
-              title: streams.length > 1 ? `${tile.title} · ${i + 1}` : tile.title,
-              url,
-            })),
-            index: 0,
-          };
-          playHls(tile.title, streams[0]);
-          return;
-        }
-      } catch (_) {}
-      // If stream scrape fails, continue to iframe path below
-    }
-
     titleEl.textContent = tile.title;
     clear();
     body.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
