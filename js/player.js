@@ -360,22 +360,93 @@ export function createPlayerController(opts) {
   }
 
   /**
+   * Ch1: SW proxy for popup-kill + muted autoplay inject.
+   * If SW is not controlling (app shell) or proxy 502s, fall back to direct — no sandbox.
+   */
+  function mountProxiedWithDirectFallback(url) {
+    const proxyUrl = proxiedPlayerUrl(url);
+    const frame = configureFrame(
+      mountLockedIframe(proxyUrl, { sandbox: false })
+    );
+    currentIframe = frame;
+    let fellBack = false;
+
+    const goDirect = () => {
+      if (fellBack || currentIframe !== frame) return;
+      fellBack = true;
+      try {
+        frame.src = url;
+      } catch (_) {}
+    };
+
+    const looksLikeProxyOk = (doc) => {
+      if (!doc) return false;
+      if (doc.getElementById("shaib-player-shield")) return true;
+      if (doc.getElementById("shaib-player-autoplay")) return true;
+      if (doc.querySelector("video, .clappr-player, #player, [data-player]"))
+        return true;
+      return false;
+    };
+
+    const looksBroken = (doc) => {
+      if (!doc) return false;
+      if (looksLikeProxyOk(doc)) return false;
+      const bodyText = String(doc.body?.textContent || "").trim();
+      // App shell when SW not controlling (?__shaib_player served as index)
+      if (
+        doc.getElementById("app") ||
+        doc.querySelector(".app-shell, #home, [data-shaib-app]") ||
+        /shaib\s*sport/i.test(String(doc.title || ""))
+      ) {
+        return true;
+      }
+      if (
+        bodyText.length < 280 &&
+        /forbidden|fetch failed|HTTP\s*\d|empty upstream|502|403/i.test(
+          bodyText
+        )
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    frame.addEventListener("load", () => {
+      try {
+        const doc = frame.contentDocument;
+        if (looksBroken(doc)) goDirect();
+      } catch (_) {
+        /* cross-origin direct embed — leave it */
+      }
+    });
+    frame.addEventListener("error", goDirect);
+    setTimeout(() => {
+      try {
+        if (looksBroken(frame.contentDocument)) goDirect();
+      } catch (_) {}
+    }, 3500);
+
+    return { frame, mode: "proxied-ch1" };
+  }
+
+  /**
    * Stream / syria player embeds (no site sandbox — players reject it).
    */
   async function mountShielded(url, injectExtra = "") {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch1 / ch2: direct embed — SW proxy 404s on mobile before SW controls
-      if (/kora-sami|splplayer|kore10/i.test(url)) {
+      // Ch1 (kore10): direct AlbaPlayer embed
+      if (/kore10/i.test(url)) {
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );
         currentIframe = frame;
-        return {
-          frame,
-          mode: /kore10/i.test(url) ? "direct-ch2" : "direct-ch1",
-        };
+        return { frame, mode: "direct-ch1" };
+      }
+      // Ch2 (kora-sami): SW proxy + inject; direct fallback if proxy flaky
+      if (/kora-sami|splplayer/i.test(url)) {
+        return mountProxiedWithDirectFallback(url);
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(

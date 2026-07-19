@@ -94,13 +94,13 @@
     {
       "id": "browser-1",
       "title": "قناة 1",
-      "url": "https://m4.kora-sami.com/splplayer/bmax1/",
+      "url": "https://k2.kore10.blog/albaplayer/p-1/?serv=1",
       "enabled": true
     },
     {
       "id": "browser-2",
       "title": "قناة 2",
-      "url": "https://k2.kore10.blog/albaplayer/p-1/?serv=1",
+      "url": "https://m4.kora-sami.com/splplayer/bmax1/",
       "enabled": true
     },
     {
@@ -559,8 +559,8 @@
     "subtitle": "الصق رابط مباشر لمشغل المباراة وسوف يتم تشغيلها مع حظر الإعلانات",
     "start_url": "https://www.google.com"
   },
-  "channel1_url": "https://m4.kora-sami.com/splplayer/bmax1/",
-  "channel2_url": "https://k2.kore10.blog/albaplayer/p-1/?serv=1",
+  "channel1_url": "https://k2.kore10.blog/albaplayer/p-1/?serv=1",
+  "channel2_url": "https://m4.kora-sami.com/splplayer/bmax1/",
   "channel3_url": "https://worldchampion.fun/welcome-4/",
   "ch3_enabled": true,
   "ch3_title_ar": "قناة 3",
