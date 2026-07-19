@@ -10,8 +10,7 @@ import { loadCanvasConfig } from "./config.js";
 import { icons, iconWrap } from "./icons.js";
 import { isLoggedIn, login, logout } from "./auth.js";
 import { createPlayerController } from "./player.js";
-import { prepareFilters, onFilterProgress } from "./filter-engine.js";
-import { syncAdblockFromEngine } from "./adblock.js";
+import { prepareFilters } from "./filter-engine.js";
 import { installGlobalAdblock, loadShieldedIframe } from "./global-adblock.js";
 
 const SOUTH_ARABIA_FLAG =
@@ -450,8 +449,17 @@ function showLogin() {
 }
 
 function bind() {
-  $$(".tabbar button").forEach((btn) => {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  const onTab = (btn) => {
+    if (!btn?.dataset?.tab) return;
+    switchTab(btn.dataset.tab);
+  };
+  // Single delegated handler (SVG/span have pointer-events:none)
+  document.querySelector(".tabbar")?.addEventListener("click", (e) => {
+    const btn = e.target?.closest?.("button[data-tab]");
+    if (btn) {
+      e.preventDefault();
+      onTab(btn);
+    }
   });
 
   function tryLogin(e) {
@@ -549,59 +557,27 @@ function hideSplash() {
   } catch (_) {}
 }
 
-function setFilterProgressUI(p) {
-  const els = [$("#filter-progress"), $("#filter-progress-login")].filter(Boolean);
-  if (!els.length) return;
-  const lang = state.prefs.lang || "ar";
-  const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
-  const text =
-    p.ready && p.hosts > 1000
-      ? t(lang, "filtersReady").replace("{n}", String(p.hosts))
-      : `${t(lang, "filtersLoading")} ${pct}% · ${p.current || ""}`;
-  els.forEach((el) => {
-    el.hidden = false;
-    el.textContent = text;
-  });
-}
-
 async function ensureFiltersReady() {
-  // Seed-level protection on immediately (all tabs)
+  // Shell AdBlock is SW-only (non-aggressive). Heavy lists load in background.
   installGlobalAdblock();
-  const unsub = onFilterProgress(setFilterProgressUI);
-  const job = prepareFilters()
-    .then((stats) => {
-      syncAdblockFromEngine();
-      installGlobalAdblock();
-      setFilterProgressUI({
-        ready: true,
-        done: stats.progress?.total || 0,
-        total: stats.progress?.total || 0,
-        hosts: stats.hosts,
-        current: "",
+  const run = () =>
+    prepareFilters()
+      .then((stats) => {
+        // Player shields sync later on open — not here (avoids UI freeze)
+        installGlobalAdblock();
+        return stats;
+      })
+      .catch(() => {
+        installGlobalAdblock();
       });
-      return stats;
-    })
-    .catch(() => {
-      syncAdblockFromEngine();
-      installGlobalAdblock();
-    });
 
-  // Don't block the UI for huge remote lists — seed/cache apply immediately;
-  // full lists finish in background and sync into SW + all-tab shield.
-  await Promise.race([job, new Promise((r) => setTimeout(r, 3500))]);
-  syncAdblockFromEngine();
-  installGlobalAdblock();
-  unsub();
-  job.finally(() => {
-    syncAdblockFromEngine();
-    installGlobalAdblock();
-    setTimeout(() => {
-      ["#filter-progress", "#filter-progress-login"].forEach((sel) => {
-        const el = $(sel);
-        if (el) el.hidden = true;
-      });
-    }, 1800);
-  });
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => {
+      run();
+    }, { timeout: 4000 });
+  } else {
+    setTimeout(run, 1500);
+  }
 }
 
 try {

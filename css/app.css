@@ -860,7 +860,7 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: 60;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2px;
@@ -868,6 +868,8 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   background: rgba(13, 13, 18, 0.94);
   border-top: 1px solid var(--line);
   backdrop-filter: blur(18px);
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 [data-theme="royale"] .tabbar {
@@ -889,6 +891,16 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   font-family: inherit;
   font-size: 0.68rem;
   font-weight: 700;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.tabbar button svg,
+.tabbar button span {
+  pointer-events: none;
 }
 
 .tabbar button svg {

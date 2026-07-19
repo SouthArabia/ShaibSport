@@ -74,16 +74,19 @@ const SHIELD_HOST_CAP = 30_000;
 const SHIELD_COSMETIC_CAP = 6_000;
 
 /**
- * Call after prepareFilters() so shield / cleanHtml use the full lists.
+ * Sync cosmetics for player shields only.
+ * Do NOT copy tens of thousands of hosts onto the main thread — engineIsAdHost
+ * already reads the filter-engine Set (keeps tabs responsive).
  */
 export function syncAdblockFromEngine() {
-  const hosts = getHostList();
-  if (hosts.length) hostSet = new Set(hosts.map((h) => h.toLowerCase()));
-  const cos = getCosmeticList();
-  if (cos.length) {
-    const merged = new Set([...EXTRA_COSMETIC_BASE, ...cos]);
-    cosmeticList = [...merged].slice(0, SHIELD_COSMETIC_CAP + EXTRA_COSMETIC_BASE.length);
-  }
+  try {
+    const cos = getCosmeticList();
+    if (cos.length) {
+      // Keep cosmetics modest for srcdoc size / main-thread cost
+      const merged = new Set([...EXTRA_COSMETIC_BASE, ...cos.slice(0, 2500)]);
+      cosmeticList = [...merged];
+    }
+  } catch (_) {}
 }
 
 export function hostnameOf(url) {

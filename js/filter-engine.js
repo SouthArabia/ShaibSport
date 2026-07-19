@@ -303,15 +303,17 @@ async function loadCached() {
 }
 
 async function saveCache() {
+  // Cap serialized size — huge host arrays freeze the main thread / blow IDB
   await idbSet({
     ts: Date.now(),
-    hosts: getHostList(),
-    cosmetics: getCosmeticList(),
+    hosts: getHostList().slice(0, 50_000),
+    cosmetics: getCosmeticList().slice(0, 4_000),
   });
 }
 
 async function pushToServiceWorker() {
-  const hosts = getHostList();
+  // Cap payload so postMessage doesn't freeze the UI thread
+  const hosts = getHostList().slice(0, 40_000);
   const payload = { type: "SHAIB_FILTER_UPDATE", hosts };
 
   const send = (sw) => {
@@ -320,14 +322,23 @@ async function pushToServiceWorker() {
     } catch (_) {}
   };
 
-  if (navigator.serviceWorker?.controller) {
-    send(navigator.serviceWorker.controller);
-    return;
+  const flush = () => {
+    if (navigator.serviceWorker?.controller) {
+      send(navigator.serviceWorker.controller);
+      return;
+    }
+    navigator.serviceWorker?.ready
+      .then((reg) => {
+        if (reg?.active) send(reg.active);
+      })
+      .catch(() => {});
+  };
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(flush, { timeout: 5000 });
+  } else {
+    setTimeout(flush, 0);
   }
-  try {
-    const reg = await navigator.serviceWorker?.ready;
-    if (reg?.active) send(reg.active);
-  } catch (_) {}
 }
 
 async function loadOne(list) {

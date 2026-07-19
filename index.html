@@ -263,6 +263,26 @@
   <script type="module" src="./js/app.js"></script>
   <script>
     (function () {
+      // Lightweight tab switching fallback (works even if modules are busy)
+      document.addEventListener(
+        "click",
+        function (e) {
+          var btn = e.target && e.target.closest && e.target.closest(".tabbar button[data-tab]");
+          if (!btn) return;
+          var tab = btn.getAttribute("data-tab");
+          if (!tab) return;
+          var buttons = document.querySelectorAll(".tabbar button[data-tab]");
+          for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.toggle("active", buttons[i].getAttribute("data-tab") === tab);
+          }
+          var pages = document.querySelectorAll("main.page[data-page]");
+          for (var j = 0; j < pages.length; j++) {
+            pages[j].hidden = pages[j].getAttribute("data-page") !== tab;
+          }
+        },
+        true
+      );
+
       var KEY = "shaib_pwa_auth_v1";
       function norm(s) {
         return String(s || "")
