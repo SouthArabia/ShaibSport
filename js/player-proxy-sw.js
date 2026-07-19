@@ -307,15 +307,31 @@ iframe[src*="monetag"],iframe[src*="clickadu"],iframe[src*="popcash"]{
   if(window.__shaibPlayerAutoPlay)return;window.__shaibPlayerAutoPlay=true;
   var tries=0;
   var unmuted=false;
+  var mobile=/iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent||'');
   function playVid(v){
     try{
       v.setAttribute('playsinline','');
       v.setAttribute('webkit-playsinline','');
       v.setAttribute('autoplay','');
+      v.setAttribute('muted','');
       v.playsInline=true;
       v.muted=true;v.defaultMuted=true;
       var p=v.play();
       if(p&&p.then)p.then(function(){
+        // Desktop: unmute shortly. Mobile: stay muted so autoplay is allowed, unmute on first tap.
+        if(mobile){
+          if(!window.__shaibUnmuteBound){
+            window.__shaibUnmuteBound=true;
+            var unmute=function(){
+              try{document.querySelectorAll('video,audio').forEach(function(x){x.muted=false;});}catch(e){}
+              document.removeEventListener('touchstart',unmute,true);
+              document.removeEventListener('click',unmute,true);
+            };
+            document.addEventListener('touchstart',unmute,true);
+            document.addEventListener('click',unmute,true);
+          }
+          return;
+        }
         if(!unmuted){
           unmuted=true;
           setTimeout(function(){try{v.muted=false;}catch(e){}},500);

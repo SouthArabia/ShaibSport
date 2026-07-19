@@ -68,6 +68,30 @@ function isChannel3Site(url = "") {
   return /worldchampion\.fun/i.test(String(url || ""));
 }
 
+function isMobileDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod|Android|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+    return true;
+  }
+  // iPadOS desktop UA still has touch
+  return navigator.maxTouchPoints > 1 && /MacIntel/i.test(navigator.platform || "");
+}
+
+async function ensureServiceWorkerReady(ms = 2500) {
+  if (!("serviceWorker" in navigator)) return false;
+  try {
+    const ready = navigator.serviceWorker.ready.then((reg) =>
+      !!(reg?.active || navigator.serviceWorker.controller)
+    );
+    return await Promise.race([
+      ready,
+      new Promise((r) => setTimeout(() => r(false), ms)),
+    ]);
+  } catch (_) {
+    return false;
+  }
+}
+
 /**
  * Same-origin SW proxy. Use a real existing path + query so mobile Safari
  * never hits a GitHub Pages 404 when the SW is not yet controlling.
@@ -436,8 +460,13 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch1 (kora-sami): direct embed — proxy/native-HLS experiments broke playback
+      // Ch1 (kora-sami): on iOS/Android use SW proxy autoplay inject; desktop stays direct
       if (/kora-sami|splplayer/i.test(url)) {
+        if (isMobileDevice() && (await ensureServiceWorkerReady())) {
+          const mounted = mountProxiedWithDirectFallback(url);
+          mounted.mode = "proxied-ch1-mobile";
+          return mounted;
+        }
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );
