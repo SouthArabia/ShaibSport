@@ -495,15 +495,17 @@ function renderIptv() {
     </div>`;
 
   if (state.iptv.view === "channels" && state.iptv.group) {
-    const group = data.groups.find((g) => g.name === state.iptv.group);
-    let list = group?.channels || [];
-    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
+    const allMode = state.iptv.group === "__all__";
+    const group = allMode ? null : data.groups.find((g) => g.name === state.iptv.group);
+    let list = allMode ? data.channels || [] : group?.channels || [];
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || c.group.toLowerCase().includes(q));
     const page = state.iptv.page;
     const slice = list.slice(0, (page + 1) * IPTV_PAGE_SIZE);
+    const heading = allMode ? t(lang, "iptvAll") : state.iptv.group;
     html += `
       <div class="iptv-back-row">
         <button type="button" class="btn ghost" id="iptv-back">‹ ${t(lang, "iptvBack")}</button>
-        <strong>${state.iptv.group}</strong>
+        <strong>${heading}</strong>
         <span class="muted">${list.length}</span>
       </div>
       <div class="canvas-grid">
@@ -535,7 +537,18 @@ function renderIptv() {
         }))
         .filter((g) => g.count > 0);
     }
+    const total = data.channels?.length || 0;
     html += `
+      <div class="canvas-wide" style="margin-bottom:12px">
+        ${tileButton({
+          id: "iptv-all",
+          kind: "ch4",
+          title: t(lang, "iptvAll"),
+          subtitle: `${total} ${t(lang, "iptvChannels")}`,
+          icon: "tv",
+          emphasized: true,
+        })}
+      </div>
       <div class="canvas-grid">
         ${groups
           .map((g) =>
@@ -574,6 +587,12 @@ function renderIptv() {
     state.iptv.page += 1;
     renderIptv();
   });
+  root.querySelector('[data-tile-id="iptv-all"]')?.addEventListener("click", () => {
+    state.iptv.view = "channels";
+    state.iptv.group = "__all__";
+    state.iptv.page = 0;
+    renderIptv();
+  });
   root.querySelectorAll("[data-iptv-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.iptvId || "";
@@ -586,8 +605,9 @@ function renderIptv() {
       }
       if (id.startsWith("ch:")) {
         const url = id.slice(3);
-        const group = data.groups.find((g) => g.name === state.iptv.group);
-        const ch = group?.channels.find((c) => c.url === url);
+        const ch =
+          (data.channels || []).find((c) => c.url === url) ||
+          data.groups.find((g) => g.name === state.iptv.group)?.channels.find((c) => c.url === url);
         openPlayer({
           kind: "live",
           id: url,
@@ -770,7 +790,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=30"),
+      navigator.serviceWorker.register("./sw.js?v=31"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
