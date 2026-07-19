@@ -1,7 +1,7 @@
 const dict = {
   ar: {
     brandSub: "رفيق فرق الشعيب",
-    matches: "مباريات",
+    matches: "شاهد الان",
     today: "اليوم",
     international: "كأس العالم",
     iptv: "تلفاز مباشر",
@@ -12,7 +12,7 @@ const dict = {
     iptvMore: "المزيد",
     iptvChannels: "قناة",
     settings: "إعدادات",
-    matchesTitle: "مباريات",
+    matchesTitle: "شاهد الان",
     matchesSub: "القنوات والمواقع والبث",
     todayTitle: "اليوم",
     todaySub: "مباريات اليوم والدولية",
@@ -65,7 +65,7 @@ const dict = {
       "الشعيب سبورت (نسخة الويب)\n\n• تُحفظ اللغة والمظهر محلياً على جهازك.\n• تُجلب نتائج المباريات من مصادر عامة على الإنترنت.\n• لا نطلب إنشاء حساب.\n• للتواصل: 415apps@gmail.com",
     about: "عن التطبيق",
     aboutBody:
-      "تطبيق ويب حديث لمشجّعي كرة القدم وفرق الشعيب للناشئين.\nمباريات · اليوم · كأس العالم · تلفاز مباشر · إعدادات",
+      "تطبيق ويب حديث لمشجّعي كرة القدم وفرق الشعيب للناشئين.\nشاهد الان · اليوم · كأس العالم · تلفاز مباشر · إعدادات",
     openWhatsApp: "واتساب",
     email: "بريد",
     dayToday: "اليوم",
@@ -73,7 +73,7 @@ const dict = {
   },
   en: {
     brandSub: "Shaib youth companion",
-    matches: "Matches",
+    matches: "Watch",
     today: "Today",
     international: "World Cup",
     iptv: "Live TV",
@@ -84,7 +84,7 @@ const dict = {
     iptvMore: "Load more",
     iptvChannels: "channels",
     settings: "Settings",
-    matchesTitle: "Matches",
+    matchesTitle: "Watch",
     matchesSub: "Channels, sites, and live streams",
     todayTitle: "Today",
     todaySub: "Today’s fixtures & internationals",
@@ -137,7 +137,7 @@ const dict = {
       "Shaib Sport (Web)\n\n• Language and theme are stored locally on your device.\n• Match data is fetched from public sports APIs.\n• No account is required.\n• Contact: 415apps@gmail.com",
     about: "About",
     aboutBody:
-      "A modern web app for football fans and Shaib youth teams.\nMatches · Today · World Cup · Live TV · Settings",
+      "A modern web app for football fans and Shaib youth teams.\nWatch · Today · World Cup · Live TV · Settings",
     openWhatsApp: "WhatsApp",
     email: "Email",
     dayToday: "Today",

@@ -143,7 +143,7 @@
   <main class="page" data-page="matches">
     <div class="section-head">
       <div>
-        <h1 id="matches-heading">مباريات</h1>
+        <h1 id="matches-heading">شاهد الان</h1>
         <p data-i18n="matchesSub">القنوات والمواقع والبث</p>
       </div>
     </div>
@@ -254,7 +254,7 @@
   <nav class="tabbar" aria-label="Tabs">
     <button type="button" data-tab="matches" class="active">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <span>Matches</span>
+      <span>Watch</span>
     </button>
     <button type="button" data-tab="today">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
@@ -279,7 +279,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=29";
+      var SW_URL = "./sw.js?v=30";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -297,7 +297,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=29"></script>
+  <script type="module" src="./js/app.js?v=30"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

@@ -181,8 +181,8 @@ export function buildCanvasModel(cfg = {}) {
       : null;
 
   return {
-    tabTitleAr: cfg.live_title || "مباريات",
-    tabTitleEn: cfg.live_title_en || "Matches",
+    tabTitleAr: cfg.live_title || "شاهد الان",
+    tabTitleEn: cfg.live_title_en || "Watch",
     topTiles: [...topBrowsers, ...domains],
     custom,
     ch4,
