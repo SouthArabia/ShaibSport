@@ -55,7 +55,18 @@
 iframe[src*="ad"],iframe[src*="banner"],iframe[src*="pop"],iframe[id*="ad"],iframe[class*="ad"],
 [class*="adsbox"],[id*="adsbox"],[class*="ad-container"],[id*="ad-container"],
 [class*="popup"],[id*="popup"],[class*="OverlayAd"],a[href*="doubleclick"],
-#aclib-wrapper,.aclib-widget,[class*="aclib"]{display:none!important;visibility:hidden!important;pointer-events:none!important;height:0!important;width:0!important;overflow:hidden!important}
+#aclib-wrapper,.aclib-widget,[class*="aclib"],
+/* AlbaPlayer / syria-live chrome */
+.aplr-link,a.aplr-link,.aplr-exbtns,
+.aplr-action.showrefresh,.aplr-action.showshare,
+.aplr-icon-refresh,.aplr-icon-share,
+a[href*="?serv="],a[href*="&serv="],
+a[href*="javascript:window.location.reload"],
+a[href*="location.reload"]{
+  display:none!important;visibility:hidden!important;pointer-events:none!important;
+  height:0!important;width:0!important;max-height:0!important;overflow:hidden!important;
+  opacity:0!important;margin:0!important;padding:0!important;border:0!important
+}
 </style>
 <script id="shaib-player-shield">
 (function(){
@@ -71,16 +82,30 @@ iframe[src*="ad"],iframe[src*="banner"],iframe[src*="pop"],iframe[id*="ad"],ifra
     }
   },true);
   var re=/acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|\\/ads\\//i;
+  var uiHide=/bein\\s*max|تحديث|مشاركة|share|refresh|بث\\s*\\d+/i;
+  function hide(el){
+    if(!el||!el.style)return;
+    el.style.setProperty('display','none','important');
+    el.style.setProperty('visibility','hidden','important');
+    el.style.setProperty('pointer-events','none','important');
+    el.setAttribute('hidden','');
+  }
   function scrub(){
     try{
       document.querySelectorAll('script[src],iframe[src],img[src],a[href]').forEach(function(el){
         var v=el.src||el.href||'';
         if(re.test(v)){el.remove();}
       });
+      document.querySelectorAll('.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,.aplr-icon-refresh,.aplr-icon-share,a[href*="serv="]').forEach(hide);
+      document.querySelectorAll('a,button,span,div,li').forEach(function(el){
+        var t=(el.textContent||'').replace(/\\s+/g,' ').trim();
+        if(!t||t.length>40)return;
+        if(uiHide.test(t)) hide(el);
+      });
     }catch(e){}
   }
   scrub();
-  setInterval(scrub,800);
+  setInterval(scrub,700);
   try{new MutationObserver(scrub).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
 })();
 </script>

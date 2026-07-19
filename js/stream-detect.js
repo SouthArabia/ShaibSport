@@ -153,6 +153,27 @@ export function syriaHelpersScript() {
   document.querySelectorAll('video').forEach(function(v){
     try{v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');}catch(e){}
   });
+  // Hide beiN MAX 1/2/3… + تحديث + مشاركة on AlbaPlayer / syria-live
+  try{
+    if(!document.getElementById('shaib-syria-ui-hide')){
+      var st=document.createElement('style');
+      st.id='shaib-syria-ui-hide';
+      st.textContent='.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,.aplr-icon-refresh,.aplr-icon-share,a[href*="serv="]{display:none!important;visibility:hidden!important;pointer-events:none!important;height:0!important;overflow:hidden!important}';
+      (document.head||document.documentElement).appendChild(st);
+    }
+    var re=/bein\\s*max|تحديث|مشاركة|share|refresh/i;
+    function hide(el){if(!el||!el.style)return;el.style.setProperty('display','none','important');el.setAttribute('hidden','');}
+    function scrub(){
+      document.querySelectorAll('.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,a[href*="serv="]').forEach(hide);
+      document.querySelectorAll('a,button').forEach(function(el){
+        var t=(el.textContent||'').replace(/\\s+/g,' ').trim();
+        if(t&&t.length<40&&re.test(t)) hide(el);
+      });
+    }
+    scrub();
+    setInterval(scrub,800);
+    try{new MutationObserver(scrub).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+  }catch(e){}
 })();`;
 }
 
