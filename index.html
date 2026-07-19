@@ -174,17 +174,12 @@
     <div class="section-head">
       <div>
         <h1 data-i18n="intlTitle">كأس العالم</h1>
-        <p data-i18n="intlSub">الفرق المتأهلة ورسم الإقصاء</p>
+        <p data-i18n="intlSub">الفرق المتأهلة والمباريات</p>
       </div>
     </div>
 
     <h2 id="teams-label" style="font-family:var(--font-display);font-size:1.05rem;margin:0 0 8px">الفرق</h2>
     <div class="knockout-grid" id="knockout-grid"></div>
-
-    <h2 id="bracket-label" style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">رسم الإقصاء</h2>
-    <div class="bracket-frame-wrap">
-      <iframe id="bracket-frame" title="World Cup bracket" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-    </div>
 
     <h2 style="font-family:var(--font-display);font-size:1.05rem;margin:18px 0 8px">Fixtures</h2>
     <div id="intl-list"></div>
@@ -281,7 +276,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=34";
+      var SW_URL = "./sw.js?v=35";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -299,7 +294,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=34"></script>
+  <script type="module" src="./js/app.js?v=35"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

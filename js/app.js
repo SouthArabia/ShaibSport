@@ -4,14 +4,13 @@ import {
   fetchTodayBoard,
   fetchInternationalBoard,
   fetchKnockout,
-  bracketUrl,
 } from "./api.js";
 import { loadCanvasConfig } from "./config.js";
 import { icons, iconWrap } from "./icons.js";
 import { isLoggedIn, login, logout } from "./auth.js";
 import { createPlayerController } from "./player.js";
 import { prepareFilters } from "./filter-engine.js";
-import { installGlobalAdblock, loadShieldedIframe } from "./global-adblock.js";
+import { installGlobalAdblock } from "./global-adblock.js";
 import {
   IPTV_PLAYLIST_URL,
   fetchIptvPlaylist,
@@ -414,13 +413,9 @@ async function loadToday(force) {
 async function loadInternational(force) {
   const listEl = $("#intl-list");
   const koEl = $("#knockout-grid");
-  const frame = $("#bracket-frame");
   const lang = state.prefs.lang;
 
-  $("#bracket-label").textContent = t(lang, "bracket");
   $("#teams-label").textContent = t(lang, "teams");
-  // International bracket iframe — load through AdBlock shield
-  loadShieldedIframe(frame, bracketUrl(lang));
 
   if (!force && state.cache.knockout) {
     renderKnockout(koEl, state.cache.knockout, lang);
@@ -813,7 +808,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=34"),
+      navigator.serviceWorker.register("./sw.js?v=35"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
