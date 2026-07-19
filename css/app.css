@@ -887,6 +887,17 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   background: #000;
 }
 
+/* Mobile: keep a real stage height (flex min-height:0 can collapse under toolbars) */
+@media (max-width: 800px) {
+  .player-stack {
+    min-height: 70vh;
+  }
+  .player-stage {
+    min-height: 56vh;
+    flex: 1 1 auto;
+  }
+}
+
 .player-stage iframe,
 .player-stage video,
 .player-iframe {

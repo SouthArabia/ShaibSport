@@ -68,12 +68,15 @@ function isChannel3Site(url = "") {
   return /worldchampion\.fun/i.test(String(url || ""));
 }
 
-/** Same-origin SW proxy strips ads while keeping a real origin (srcdoc is blocked by players). */
+/**
+ * Same-origin SW proxy. Use a real existing path + query so mobile Safari
+ * never hits a GitHub Pages 404 when the SW is not yet controlling.
+ */
 function proxiedPlayerUrl(url) {
-  return new URL(
-    `./__shaib_player?u=${encodeURIComponent(url)}`,
-    location.href
-  ).href;
+  const u = new URL("./", location.href);
+  u.searchParams.set("__shaib_player", "1");
+  u.searchParams.set("u", url);
+  return u.href;
 }
 
 function normalizeNavUrl(raw) {
@@ -363,16 +366,20 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // No iframe sandbox — kora-sami / syria players detect it and refuse to play.
-      // Popups blocked in proxy HTML inject; autoplay kicked there too.
+      // Channel 1 (kora-sami): direct embed — SW proxy 404s on mobile before SW controls
+      if (/kora-sami|splplayer/i.test(url)) {
+        const frame = configureFrame(
+          mountLockedIframe(url, { sandbox: false })
+        );
+        currentIframe = frame;
+        return { frame, mode: "direct-ch1" };
+      }
+      // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
       );
       currentIframe = frame;
-      return {
-        frame,
-        mode: /kora-sami|splplayer/i.test(url) ? "proxied-ch1" : "proxied",
-      };
+      return { frame, mode: "proxied" };
     }
 
     try {

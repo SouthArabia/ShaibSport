@@ -305,7 +305,9 @@ a[href*="location.reload"],
 
   global.SHAIB_IS_PLAYER_PROXY = function (url) {
     try {
-      return new URL(url).pathname.endsWith("/__shaib_player");
+      const u = new URL(url);
+      if (u.searchParams.get("__shaib_player") === "1") return true;
+      return u.pathname.endsWith("/__shaib_player");
     } catch (_) {
       return false;
     }
