@@ -1,11 +1,12 @@
 {
   "name": "Shaib Sport",
   "short_name": "ShaibSport",
-  "description": "",
+  "description": "Shaib Sport — live football channels, scores, and World Cup.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "display_override": ["standalone", "fullscreen", "browser"],
+  "orientation": "any",
   "background_color": "#0B0B0F",
   "theme_color": "#0B0B0F",
   "lang": "ar",
@@ -21,8 +22,15 @@
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["sports", "entertainment"]
+  "categories": ["sports", "entertainment"],
+  "prefer_related_applications": false
 }

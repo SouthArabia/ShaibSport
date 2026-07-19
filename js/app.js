@@ -357,19 +357,31 @@ function isIosDevice() {
   return navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1;
 }
 
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent || "");
+}
+
 function canOfferInstall() {
   if (isStandaloneApp()) return false;
-  return !!(state.deferredInstall || isIosDevice());
+  return !!(state.deferredInstall || isIosDevice() || isAndroidDevice());
 }
 
 function openInstallGuide() {
   const lang = state.prefs.lang;
   const sheet = $("#install-sheet");
   if (!sheet) return;
-  $("#install-sheet-title").textContent = t(lang, "installSheetTitle");
-  $("#install-sheet-hint").textContent = t(lang, "installSheetHint");
+  const android = isAndroidDevice() && !isIosDevice();
+  $("#install-sheet-title").textContent = t(
+    lang,
+    android ? "installSheetTitleAndroid" : "installSheetTitle"
+  );
+  $("#install-sheet-hint").textContent = t(
+    lang,
+    android ? "installSheetHintAndroid" : "installSheetHint"
+  );
+  const stepKey = android ? "installAndroidStep" : "installIosStep";
   $("#install-sheet-steps").innerHTML = [1, 2, 3]
-    .map((n) => `<li>${t(lang, `installIosStep${n}`)}</li>`)
+    .map((n) => `<li>${t(lang, `${stepKey}${n}`)}</li>`)
     .join("");
   $("#install-sheet-close").textContent = t(lang, "gotIt");
   sheet.hidden = false;
@@ -381,6 +393,7 @@ function closeInstallGuide() {
 }
 
 async function offerInstall() {
+  // Android Chrome / Edge: native install prompt when available
   if (state.deferredInstall) {
     try {
       state.deferredInstall.prompt();
@@ -390,6 +403,7 @@ async function offerInstall() {
     paintChrome();
     return;
   }
+  // iOS / Android fallback: step-by-step guide
   openInstallGuide();
 }
 
@@ -437,13 +451,19 @@ function paintChrome() {
 
   const standalone = isStandaloneApp();
   const ios = isIosDevice();
+  const android = isAndroidDevice();
   const dismissed = sessionStorage.getItem("shaib_install_dismissed");
-  const showBanner = !standalone && !dismissed && (state.deferredInstall || ios);
+  const showBanner =
+    !standalone && !dismissed && (state.deferredInstall || ios || android);
 
   const banner = $("#install-banner");
   if (banner) banner.hidden = !showBanner;
   $("#install-title").textContent = t(lang, "installTitle");
-  $("#install-body").textContent = ios ? t(lang, "installBodyIos") : t(lang, "installBody");
+  $("#install-body").textContent = ios
+    ? t(lang, "installBodyIos")
+    : android
+      ? t(lang, "installBodyAndroid")
+      : t(lang, "installBody");
   $("#install-btn").textContent = state.deferredInstall
     ? t(lang, "installBtn")
     : t(lang, "installBtnHow");
@@ -455,12 +475,16 @@ function paintChrome() {
   if ($("#install-settings-sub")) {
     $("#install-settings-sub").textContent = standalone
       ? t(lang, "installDone")
-      : t(lang, "installSettingsSub");
+      : android
+        ? t(lang, "installBodyAndroid")
+        : ios
+          ? t(lang, "installBodyIos")
+          : t(lang, "installSettingsSub");
   }
   if ($("#btn-install-settings")) {
-    $("#btn-install-settings").textContent = ios && !state.deferredInstall
-      ? t(lang, "installBtnHow")
-      : t(lang, "installBtn");
+    $("#btn-install-settings").textContent = state.deferredInstall
+      ? t(lang, "installBtn")
+      : t(lang, "installBtnHow");
   }
 }
 
@@ -927,7 +951,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=38"),
+      navigator.serviceWorker.register("./sw.js?v=39"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
