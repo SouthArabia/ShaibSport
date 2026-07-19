@@ -951,7 +951,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=44"),
+      navigator.serviceWorker.register("./sw.js?v=45"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

@@ -271,10 +271,6 @@
   </div>
 
   <nav class="tabbar" aria-label="Tabs">
-    <button type="button" data-tab="matches" class="active tab-watch" aria-label="شاهد الان">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <span>شاهد الان</span>
-    </button>
     <button type="button" data-tab="today">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
       <span>Today</span>
@@ -282,6 +278,10 @@
     <button type="button" data-tab="international">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6v5H4zM14 6h6v5h-6zM9 14h6v5H9z"/><path d="M7 11v3h10v-3"/></svg>
       <span>World Cup</span>
+    </button>
+    <button type="button" data-tab="matches" class="active tab-watch" aria-label="شاهد الان">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span>شاهد الان</span>
     </button>
     <button type="button" data-tab="iptv">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H4z"/><path d="m8 19 4-4 4 4"/><path d="M12 15v4"/></svg>
@@ -298,7 +298,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=44";
+      var SW_URL = "./sw.js?v=45";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -316,7 +316,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=44"></script>
+  <script type="module" src="./js/app.js?v=45"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
