@@ -460,11 +460,11 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch1 (kora-sami): on iOS/Android use SW proxy autoplay inject; desktop stays direct
+      // Ch1: proxy on every platform so autoplay and popup protection are consistent.
       if (/kora-sami|splplayer/i.test(url)) {
-        if (isMobileDevice() && (await ensureServiceWorkerReady())) {
+        if (await ensureServiceWorkerReady()) {
           const mounted = mountProxiedWithDirectFallback(url);
-          mounted.mode = "proxied-ch1-mobile";
+          mounted.mode = "proxied-ch1";
           return mounted;
         }
         const frame = configureFrame(
