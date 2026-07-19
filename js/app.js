@@ -13,8 +13,7 @@ import { createPlayerController } from "./player.js";
 import { prepareFilters } from "./filter-engine.js";
 import { installGlobalAdblock, loadShieldedIframe } from "./global-adblock.js";
 
-const SOUTH_ARABIA_FLAG =
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Flag_of_South_Yemen.svg/3840px-Flag_of_South_Yemen.svg.png";
+const SOUTH_ARABIA_FLAG = "./assets/flags/south-yemen.svg";
 
 function isSouthArabiaTeam(team) {
   const blob = [
@@ -41,7 +40,7 @@ function isSouthArabiaTeam(team) {
 
 function teamFlagHtml(team, name) {
   if (isSouthArabiaTeam(team) || /الجنوب\s*العربي/i.test(name || "")) {
-    return `<img class="flag-img" src="${SOUTH_ARABIA_FLAG}" alt="" loading="lazy" />`;
+    return `<img class="flag-img" src="${SOUTH_ARABIA_FLAG}" alt="الجنوب العربي" loading="lazy" onerror="this.outerHTML='<div class=&quot;flag&quot;>🇾🇪</div>'" />`;
   }
   if (team.flagCode) {
     const flag = String.fromCodePoint(
@@ -538,7 +537,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=21"),
+      navigator.serviceWorker.register("./sw.js?v=22"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

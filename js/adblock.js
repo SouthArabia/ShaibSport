@@ -463,10 +463,12 @@ export async function createBlockedWebFrame(url, onStatus) {
   const html = await fetchViaProxies(url);
   const frame = document.createElement("iframe");
   frame.className = "player-iframe";
-  frame.allow =
-    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-  frame.allowFullscreen = true;
-  frame.referrerPolicy = "no-referrer";
+  frame.setAttribute(
+    "allow",
+    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+  );
+  frame.setAttribute("allowfullscreen", "");
+  frame.setAttribute("referrerpolicy", "no-referrer");
 
   if (html && /<html|<body|<div|<script/i.test(html)) {
     frame.srcdoc = cleanHtml(html, url);

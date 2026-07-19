@@ -389,16 +389,12 @@ body {
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.3;
-  background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(212,175,55,0.85));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* Solid color — Safari often renders background-clip:text as invisible */
+  color: #f3e6c0;
 }
 
 [data-theme="royale"] .tile-title {
-  background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,107,107,0.9));
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: #ffc9c9;
 }
 
 .tile-sub {
@@ -718,10 +714,7 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: linear-gradient(90deg, #fff, var(--gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--gold);
 }
 
 .player-body {

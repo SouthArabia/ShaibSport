@@ -1,35 +1,48 @@
 import {
   attachHlsAdblock,
   cleanHtml,
-  createBlockedWebFrame,
   isAdUrl,
   syncAdblockFromEngine,
 } from "./adblock.js";
 import { prepareFilters } from "./filter-engine.js";
 import { streamDetectScript, fastServerScript, syriaHelpersScript } from "./stream-detect.js";
 
+/** Never block the player on filter downloads — seed lists already work. */
 async function ensurePlayerFilters() {
   try {
-    await prepareFilters();
+    await Promise.race([
+      prepareFilters(),
+      new Promise((r) => setTimeout(r, 600)),
+    ]);
   } catch (_) {}
   syncAdblockFromEngine();
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
+  ]);
 }
 
 async function fetchHtml(url) {
   const tries = [
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url,
   ];
   for (const u of tries) {
     try {
-      const res = await fetch(u, { cache: "no-store" });
+      const res = await withTimeout(fetch(u, { cache: "no-store" }), 7000);
       if (!res.ok) continue;
-      const text = await res.text();
+      const text = await withTimeout(res.text(), 7000);
       if (text && text.length > 80) return text;
     } catch (_) {}
   }
   return null;
+}
+
+function isDirectPlayerUrl(url = "") {
+  return /syria-player|shootsync|albaplayer|beinmax/i.test(url);
 }
 
 function normalizeNavUrl(raw) {
@@ -63,20 +76,37 @@ function toolbar(buttons) {
   return bar;
 }
 
-/** Locked sandbox iframe — last resort; blocks popups + top-level redirects */
-function mountLockedIframe(url) {
+/**
+ * Player iframe. Direct stream hosts skip sandbox (sandbox breaks HLS/players).
+ * Fallback sandboxed frames block popups + top-level redirects.
+ */
+function mountLockedIframe(url, { sandbox = true } = {}) {
   const frame = document.createElement("iframe");
   frame.className = "player-iframe";
   frame.src = url;
-  frame.allow =
-    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-  frame.allowFullscreen = true;
-  frame.referrerPolicy = "no-referrer";
-  // NO allow-popups, NO allow-top-navigation, NO allow-popups-to-escape-sandbox
   frame.setAttribute(
-    "sandbox",
-    "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+    "allow",
+    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
   );
+  frame.setAttribute("allowfullscreen", "");
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  if (sandbox) {
+    // NO allow-popups, NO allow-top-navigation
+    frame.setAttribute(
+      "sandbox",
+      "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+    );
+  }
+  return frame;
+}
+
+function configureFrame(frame) {
+  frame.setAttribute(
+    "allow",
+    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+  );
+  frame.setAttribute("allowfullscreen", "");
+  frame.setAttribute("referrerpolicy", "no-referrer");
   return frame;
 }
 
@@ -127,7 +157,14 @@ export function createPlayerController(opts) {
   }
 
   async function mountShielded(url, injectExtra = "") {
-    await ensurePlayerFilters();
+    // Direct embed players — skip proxy/srcdoc (proxies hang; sandbox breaks playback)
+    if (isDirectPlayerUrl(url)) {
+      const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
+      currentIframe = frame;
+      return { frame, mode: "direct" };
+    }
+
+    ensurePlayerFilters(); // background; seeds already active
     const html = await fetchHtml(url);
     if (html && /<html|<body|<div|<script/i.test(html)) {
       let cleaned = cleanHtml(html, url);
@@ -139,21 +176,17 @@ export function createPlayerController(opts) {
           cleaned += extras;
         }
       }
-      const frame = document.createElement("iframe");
+      const frame = configureFrame(document.createElement("iframe"));
       frame.className = "player-iframe";
       frame.srcdoc = cleaned;
-      frame.allow =
-        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-      frame.allowFullscreen = true;
       currentIframe = frame;
       return { frame, mode: "shielded" };
     }
 
-    // Fallback: createBlockedWebFrame (same shield pipeline + locked sandbox)
-    const wrap = await createBlockedWebFrame(url);
-    const frame = wrap.querySelector("iframe");
+    // Last resort: sandboxed direct iframe (no endless proxy retry)
+    const frame = configureFrame(mountLockedIframe(url, { sandbox: true }));
     currentIframe = frame;
-    return { frame: wrap, mode: "blocked-wrap" };
+    return { frame, mode: "locked" };
   }
 
   function listenForStreams(onStream, { once = true } = {}) {
@@ -399,7 +432,8 @@ export function createPlayerController(opts) {
 
   async function openTile(tile) {
     titleEl.textContent = tile.title;
-    if (tile.kind !== "live") await ensurePlayerFilters();
+    // Kick filter refresh in background — never gate the player on it
+    if (tile.kind !== "live") ensurePlayerFilters();
     switch (tile.kind) {
       case "live":
         return openLive(tile);

@@ -2,7 +2,7 @@
 importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 
-const CACHE = "shaib-sport-pwa-v21";
+const CACHE = "shaib-sport-pwa-v22";
 const ASSETS = [
   "./",
   "./index.html",
@@ -39,6 +39,7 @@ const ASSETS = [
   "./icons/apple-touch-icon.png",
   "./assets/brand/mainicon.png",
   "./assets/brand/splash.png",
+  "./assets/flags/south-yemen.svg",
 ];
 
 function withNoIndex(response) {
