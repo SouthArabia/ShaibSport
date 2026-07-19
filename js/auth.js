@@ -1,7 +1,7 @@
 /** PWA-only session gate (client-side). Not shared with any native app. */
 const AUTH_KEY = "shaib_pwa_auth_v1";
-const USER = "shaib";
-const PASS = "saber";
+const USER = "saber";
+const PASS = "7777";
 
 function readFlag() {
   try {
