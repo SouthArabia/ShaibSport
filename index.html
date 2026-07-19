@@ -260,7 +260,29 @@
   </nav>
   </div><!-- /app-shell -->
 
-  <script type="module" src="./js/app.js"></script>
+  <script>
+    // Force iOS Safari off stale service workers / caches
+    (function () {
+      if (!("serviceWorker" in navigator)) return;
+      var SW_URL = "./sw.js?v=21";
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(
+          regs.map(function (r) {
+            return r.unregister();
+          })
+        );
+      }).then(function () {
+        if (window.caches && caches.keys) {
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          });
+        }
+      }).then(function () {
+        return navigator.serviceWorker.register(SW_URL);
+      }).catch(function () {});
+    })();
+  </script>
+  <script type="module" src="./js/app.js?v=21"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
