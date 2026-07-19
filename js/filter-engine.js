@@ -280,7 +280,7 @@ function parseJsonWkRules(text) {
         .replace(/\\\./g, ".")
         .replace(/^\^https\?:\/\//, "")
         .replace(/\(\[\^\/\]\*\\\.\)\?/g, "")
-        .replace(/\[/:?\].*$/, "")
+        .replace(/\[\/?:?\].*$/, "")
         .replace(/[\\^$*+?[\](){}|]/g, "");
       const m = cleaned.match(/([a-z0-9.\-]+\.[a-z]{2,})/i);
       if (m) addHost(m[1]);

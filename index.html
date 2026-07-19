@@ -8,97 +8,92 @@
   <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache" />
   <meta name="googlebot-news" content="noindex, nofollow" />
   <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
-  <meta name="slurp" content="noindex, nofollow" />
-  <meta name="duckduckbot" content="noindex, nofollow" />
-  <meta name="baiduspider" content="noindex, nofollow" />
-  <meta name="yandex" content="noindex, nofollow" />
-  <meta name="chatgpt" content="noindex, nofollow" />
-  <meta name="gptbot" content="noindex, nofollow" />
-  <meta name="ccbot" content="noindex, nofollow" />
-  <meta name="anthropic-ai" content="noindex, nofollow" />
-  <meta name="claudebot" content="noindex, nofollow" />
-  <meta name="Applebot-Extended" content="noindex, nofollow" />
-  <meta name="Google-Extended" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description" content="" />
-  <!-- Block crawlers / scrapers before anything else loads -->
-  <script>
-    (function () {
-      var ua = navigator.userAgent || "";
-      var bot =
-        /bot|crawl|spider|slurp|scrap(e|er|ing)|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterest|applebot|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|chatgpt|ccbot|anthropic|claudebot|google-extended|amazonbot|perplexity|yandex|baidu|sogou|duckduck|bingpreview|adsbot|mediapartners|ia_archiver|httrack|wget|curl\/|python-requests|headless|phantom|selenium|puppeteer|playwright|lighthouse/i.test(
-          ua
-        );
-      var browser =
-        /mozilla\/|applewebkit|chrome\/|safari\/|firefox\/|edg\/|mobile|android|iphone|ipad/i.test(ua);
-      if (bot || !browser || !ua) {
-        try {
-          document.documentElement.innerHTML =
-            "<head><meta name=robots content=noindex,nofollow><title>403</title></head><body>Forbidden</body>";
-        } catch (e) {}
-        throw new Error("bot-blocked");
-      }
-    })();
-  </script>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./css/app.css" />
   <title>Shaib Sport</title>
   <script src="./vendor/hls.min.js" defer></script>
-  <!-- Fail-safe: never stay on splash if modules hang (common on iOS Safari) -->
+  <!-- Instant boot: never depend on modules to leave splash -->
   <script>
     (function () {
+      var KEY = "shaib_pwa_auth_v1";
       function loggedIn() {
         try {
-          if (sessionStorage.getItem("shaib_pwa_auth_v1") === "1") return true;
+          if (sessionStorage.getItem(KEY) === "1") return true;
         } catch (e) {}
         try {
-          if (localStorage.getItem("shaib_pwa_auth_v1") === "1") return true;
+          if (localStorage.getItem(KEY) === "1") return true;
         } catch (e) {}
         return false;
       }
-      function revealLogin() {
-        if (loggedIn()) return; // never cover the app after login
+      function hideSplash() {
+        var s = document.getElementById("splash");
+        if (!s) return;
+        s.hidden = true;
+        s.classList.add("hide");
+        s.style.cssText = "display:none!important;pointer-events:none!important";
+        try {
+          s.remove();
+        } catch (e) {}
+      }
+      function showLogin() {
         var gate = document.getElementById("login-gate");
         var shell = document.getElementById("app-shell");
-        if (gate && gate.hidden && shell && shell.hidden) {
+        if (shell) {
+          shell.hidden = true;
+          shell.style.display = "none";
+        }
+        if (gate) {
           gate.hidden = false;
           gate.style.display = "";
+          gate.style.pointerEvents = "";
         }
       }
-      function hide() {
-        var s = document.getElementById("splash");
-        if (s) {
-          s.classList.add("hide");
-          s.hidden = true;
-          s.style.display = "none";
-          s.style.pointerEvents = "none";
-          s.setAttribute("aria-hidden", "true");
-          try {
-            if (s.parentNode) s.parentNode.removeChild(s);
-          } catch (e) {}
+      function showApp() {
+        var gate = document.getElementById("login-gate");
+        var shell = document.getElementById("app-shell");
+        if (gate) {
+          gate.hidden = true;
+          gate.style.display = "none";
+          gate.style.pointerEvents = "none";
         }
-        revealLogin();
+        if (shell) {
+          shell.hidden = false;
+          shell.style.display = "";
+          shell.style.pointerEvents = "";
+        }
       }
-      setTimeout(hide, 1200);
-      setTimeout(hide, 3500);
-      window.addEventListener("load", function () {
-        setTimeout(hide, 400);
-      });
+      function bootUI() {
+        hideSplash();
+        if (loggedIn()) showApp();
+        else showLogin();
+      }
+      // Run as soon as body nodes exist
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootUI);
+      } else {
+        bootUI();
+      }
+      // Belts and suspenders
+      setTimeout(bootUI, 0);
+      setTimeout(bootUI, 300);
+      setTimeout(bootUI, 1000);
+      window.__shaibBootUI = bootUI;
+      window.__shaibShowApp = showApp;
+      window.__shaibHideSplash = hideSplash;
     })();
   </script>
 </head>
 <body>
-  <!-- Responsive splash (cover any device) -->
-  <div class="splash" id="splash" aria-hidden="true">
+  <div class="splash" id="splash">
     <img src="./assets/brand/splash.png" alt="Shaib Sport" />
-    <p class="filter-progress" id="filter-progress" hidden></p>
   </div>
 
-  <!-- Login gate -->
   <div class="login-gate" id="login-gate" hidden>
     <form class="login-card" id="login-form" autocomplete="on">
       <img class="login-logo" src="./assets/brand/mainicon.png" alt="" width="72" height="72" />
@@ -106,14 +101,13 @@
       <p id="login-sub">تسجيل الدخول للمتابعة</p>
       <label>
         <span id="lbl-user">اسم المستخدم</span>
-        <input id="login-user" name="username" type="text" required dir="auto" />
+        <input id="login-user" name="username" type="text" required dir="auto" autocomplete="username" />
       </label>
       <label>
         <span id="lbl-pass">كلمة المرور</span>
-        <input id="login-pass" name="password" type="password" required dir="auto" />
+        <input id="login-pass" name="password" type="password" required dir="auto" autocomplete="current-password" />
       </label>
       <p class="login-error" id="login-error" hidden></p>
-      <p class="filter-progress" id="filter-progress-login" hidden></p>
       <button class="btn" type="submit" id="login-submit">دخول</button>
     </form>
   </div>
@@ -145,7 +139,6 @@
     </div>
   </div>
 
-  <!-- MATCHES = channel / site tiles -->
   <main class="page" data-page="matches">
     <div class="section-head">
       <div>
@@ -156,7 +149,6 @@
     <div id="canvas-root"></div>
   </main>
 
-  <!-- TODAY -->
   <main class="page" data-page="today" hidden>
     <div class="section-head">
       <div>
@@ -167,7 +159,6 @@
     <div id="today-list"></div>
   </main>
 
-  <!-- INTERNATIONAL BRACKET -->
   <main class="page" data-page="international" hidden>
     <div class="section-head">
       <div>
@@ -188,7 +179,6 @@
     <div id="intl-list"></div>
   </main>
 
-  <!-- SETTINGS -->
   <main class="page" data-page="settings" hidden>
     <div class="section-head">
       <div>
@@ -242,7 +232,6 @@
     </div>
   </main>
 
-  <!-- Full-screen player (browser / HLS) -->
   <div class="player-sheet" id="player-sheet" hidden>
     <div class="player-bar">
       <button class="icon-btn" id="player-close" type="button" aria-label="Close">✕</button>
@@ -251,7 +240,7 @@
     <div class="player-body" id="player-body"></div>
   </div>
 
-  <nav class="tabbar" aria-label="Main">
+  <nav class="tabbar" aria-label="Tabs">
     <button type="button" data-tab="matches" class="active">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       <span>Matches</span>
@@ -272,7 +261,6 @@
   </div><!-- /app-shell -->
 
   <script type="module" src="./js/app.js"></script>
-  <!-- Inline login fallback (works even if ES modules fail on iOS) -->
   <script>
     (function () {
       var KEY = "shaib_pwa_auth_v1";
@@ -298,33 +286,11 @@
         if (u === "saber" && p === "7777") {
           save();
           if (err) err.hidden = true;
-          var splash = document.getElementById("splash");
-          if (splash) {
-            splash.hidden = true;
-            splash.style.display = "none";
-            try {
-              splash.remove();
-            } catch (e) {}
-          }
-          var gate = document.getElementById("login-gate");
-          var shell = document.getElementById("app-shell");
-          if (gate) {
-            gate.hidden = true;
-            gate.style.display = "none";
-            gate.style.pointerEvents = "none";
-          }
-          if (shell) {
-            shell.hidden = false;
-            shell.style.display = "";
-            shell.style.pointerEvents = "";
-          }
-          document.getElementById("shaib-global-cosmetic") &&
-            document.getElementById("shaib-global-cosmetic").remove();
-          document.getElementById("shaib-adblock-cosmetic") &&
-            document.getElementById("shaib-adblock-cosmetic").remove();
+          if (window.__shaibHideSplash) window.__shaibHideSplash();
+          if (window.__shaibShowApp) window.__shaibShowApp();
           try {
             window.dispatchEvent(new CustomEvent("shaib-login"));
-          } catch (e) {}
+          } catch (err2) {}
           return false;
         }
         if (err) {

@@ -1,18 +1,13 @@
 /* Classic script — usable from page + importScripts in SW */
 (function (root) {
+  // Only clear crawler tokens — avoid matching real browsers / tooling UAs.
   var BOT_UA_RE =
-    /bot|crawl|spider|slurp|scrap(e|er|ing)|fetch|monitor|preview|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterest|embedly|quora|redditbot|applebot|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|chatgpt|ccbot|anthropic|claudebot|claude-web|google-extended|amazonbot|meta-externalagent|cohere|perplexity|yandex|baidu|sogou|duckduck|bingpreview|adsbot|mediapartners|ia_archiver|archive\.org|wayback|httrack|wget|curl\/|python-requests|httpclient|libwww|java\/|go-http|okhttp|axios|node-fetch|headless|phantom|selenium|puppeteer|playwright|lighthouse|pagespeed|gtmetrix|pingdom|uptime|statuscake|siteaudit/i;
+    /\b(googlebot|bingbot|baiduspider|yandex(bot)?|duckduckbot|slurp|facebot|facebookexternalhit|twitterbot|linkedinbot|pinterestbot|applebot|semrushbot|ahrefsbot|dotbot|mj12bot|petalbot|bytespider|gptbot|chatgpt-user|ccbot|anthropic|claudebot|amazonbot|perplexitybot|cohere-ai|ia_archiver|archive\.org_bot|adsbot-google|mediapartners-google|bingpreview|sogou)\b/i;
 
   function isBotUserAgent(ua) {
     var s = String(ua || "");
-    if (!s) return true;
-    var looksBrowser =
-      /mozilla\/|applewebkit|chrome\/|safari\/|firefox\/|edg\/|opr\/|mobile|android|iphone|ipad/i.test(
-        s
-      );
-    if (BOT_UA_RE.test(s)) return true;
-    if (!looksBrowser) return true;
-    return false;
+    if (!s) return false; // allow empty — do not lock out real users
+    return BOT_UA_RE.test(s);
   }
 
   root.SHAIB_IS_BOT = isBotUserAgent;

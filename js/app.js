@@ -480,23 +480,23 @@ function bind() {
     ensureFiltersReady().catch(() => {});
   });
 
-  $("#refresh-btn").addEventListener("click", () => refreshActive(true));
-  $("#player-close").addEventListener("click", closePlayer);
+  $("#refresh-btn")?.addEventListener("click", () => refreshActive(true));
+  $("#player-close")?.addEventListener("click", closePlayer);
 
-  $("#lang-ar").addEventListener("click", () => {
+  $("#lang-ar")?.addEventListener("click", () => {
     state.prefs = store.save({ lang: "ar" });
     refreshActive(true);
   });
-  $("#lang-en").addEventListener("click", () => {
+  $("#lang-en")?.addEventListener("click", () => {
     state.prefs = store.save({ lang: "en" });
     refreshActive(true);
   });
-  $("#theme-classic").addEventListener("click", () => {
+  $("#theme-classic")?.addEventListener("click", () => {
     state.prefs = store.save({ theme: "classic" });
     paintChrome();
     if (state.cache.canvas) renderCanvas(state.cache.canvas, state.prefs.lang);
   });
-  $("#theme-royale").addEventListener("click", () => {
+  $("#theme-royale")?.addEventListener("click", () => {
     state.prefs = store.save({ theme: "royale" });
     paintChrome();
     if (state.cache.canvas) renderCanvas(state.cache.canvas, state.prefs.lang);
@@ -508,14 +508,14 @@ function bind() {
     paintChrome();
   });
 
-  $("#install-btn").addEventListener("click", async () => {
+  $("#install-btn")?.addEventListener("click", async () => {
     if (!state.deferredInstall) return;
     state.deferredInstall.prompt();
     await state.deferredInstall.userChoice;
     state.deferredInstall = null;
     paintChrome();
   });
-  $("#install-dismiss").addEventListener("click", () => {
+  $("#install-dismiss")?.addEventListener("click", () => {
     sessionStorage.setItem("shaib_install_dismissed", "1");
     paintChrome();
   });
@@ -604,25 +604,29 @@ async function ensureFiltersReady() {
   });
 }
 
-bind();
+try {
+  bind();
+} catch (err) {
+  console.error("bind failed", err);
+}
 
-// Never leave iPhone Safari stuck on splash — hide ASAP, load filters in background.
 (function boot() {
-  // Fail-safe timers (inline HTML also has one); JS path:
-  setTimeout(hideSplash, 700);
-  setTimeout(hideSplash, 2000);
-
   try {
+    if (typeof window.__shaibBootUI === "function") window.__shaibBootUI();
     if (isLoggedIn()) showApp();
     else showLogin();
-  } catch (_) {
-    showLogin();
+  } catch (err) {
+    console.error("boot failed", err);
+    try {
+      showLogin();
+    } catch (_) {}
   }
   hideSplash();
-
-  // SW + filter lists must not block first paint
   registerSW().catch(() => {});
-  ensureFiltersReady().catch(() => {});
+  // Filters only after UI is up — never block splash/login
+  setTimeout(() => {
+    ensureFiltersReady().catch(() => {});
+  }, 500);
 })();
 
 window.__shaibLogout = () => {
