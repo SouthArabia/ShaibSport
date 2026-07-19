@@ -484,7 +484,7 @@ export async function createBlockedWebFrame(url, onStatus) {
   );
   frame.src = url;
   stage.appendChild(frame);
-  bar.textContent = "AdBlock sandbox · popups & redirects locked";
+  bar.textContent = "AdBlock on";
   onStatus?.("fallback");
   return wrap;
 }
