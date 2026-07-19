@@ -363,21 +363,16 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Channel 1 (kora-sami): SW proxy = autoplay inject + popup kill
-      if (/kora-sami|splplayer/i.test(url)) {
-        const frame = configureFrame(
-          mountLockedIframe(proxiedPlayerUrl(url), { noPopups: true }),
-          { noPopups: true }
-        );
-        currentIframe = frame;
-        return { frame, mode: "proxied-ch1" };
-      }
+      // No iframe sandbox — kora-sami / syria players detect it and refuse to play.
+      // Popups blocked in proxy HTML inject; autoplay kicked there too.
       const frame = configureFrame(
-        mountLockedIframe(proxiedPlayerUrl(url), { noPopups: true }),
-        { noPopups: true }
+        mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
       );
       currentIframe = frame;
-      return { frame, mode: "proxied" };
+      return {
+        frame,
+        mode: /kora-sami|splplayer/i.test(url) ? "proxied-ch1" : "proxied",
+      };
     }
 
     try {
