@@ -58,9 +58,14 @@ async function fetchHtml(url) {
 }
 
 function isDirectPlayerUrl(url = "") {
-  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|worldchampion/i.test(
+  // worldchampion (ch3) is treated as a site tile: EasyList + no popups/redirects
+  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer/i.test(
     url
   );
+}
+
+function isChannel3Site(url = "") {
+  return /worldchampion\.fun/i.test(String(url || ""));
 }
 
 /** Same-origin SW proxy strips ads while keeping a real origin (srcdoc is blocked by players). */
@@ -367,15 +372,6 @@ export function createPlayerController(opts) {
         currentIframe = frame;
         return { frame, mode: "proxied-ch1" };
       }
-      // worldchampion keeps native origin for HLS referer; still block popups
-      if (/worldchampion/i.test(url)) {
-        const frame = configureFrame(
-          mountLockedIframe(url, { noPopups: true }),
-          { noPopups: true }
-        );
-        currentIframe = frame;
-        return { frame, mode: "direct-player" };
-      }
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { noPopups: true }),
         { noPopups: true }
@@ -503,8 +499,8 @@ export function createPlayerController(opts) {
     body.innerHTML = "";
     body.appendChild(wrap);
 
-    // Non-player browser tiles (e.g. Fox / sites): locked site iframe
-    if (!isDirectPlayerUrl(tile.url)) {
+    // Channel 3 / non-player sites: EasyList + continuous scan, no popups/redirects
+    if (!isDirectPlayerUrl(tile.url) || isChannel3Site(tile.url)) {
       try {
         const mounted = await mountSiteFrame(
           tile.url,
@@ -512,7 +508,9 @@ export function createPlayerController(opts) {
         );
         stage.innerHTML = "";
         stage.appendChild(mounted.frame);
-        status.textContent = t("adblockScanning");
+        status.textContent = isChannel3Site(tile.url)
+          ? "AdBlock · EasyList · continuous scan"
+          : t("adblockScanning");
       } catch (_) {
         stage.innerHTML = "";
         const frame = configureFrame(

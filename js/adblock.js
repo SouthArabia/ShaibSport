@@ -37,6 +37,9 @@ const ALLOW_HOST_PARTS = [
   "clappr",
   "cdn.jsdelivr",
   "amazonaws",
+  "streamhostingcdn",
+  "sportspass",
+  "kore10",
   "unpkg",
   "bootstrapcdn",
   "fontawesome",
@@ -57,6 +60,10 @@ const EXTRA_COSMETIC_BASE = [
   "iframe[src*='googlesyndication']",
   "iframe[src*='acscdn']",
   "iframe[src*='popads']",
+  "iframe[src*='monetag']",
+  "iframe[src*='pavanesbedizen']",
+  "script[src*='monetag']",
+  "script[src*='pavanesbedizen']",
   "a[href*='doubleclick']",
   "a[target='_blank'][href*='http'][rel*='sponsored']",
 ];
@@ -218,7 +225,7 @@ export function shieldScript(pageOriginHost = "") {
   function bad(u){
     u=String(u||'');
     if(!u || u.charAt(0)==='#' || u.indexOf('javascript:')===0 || u.indexOf('blob:')===0 || u.indexOf('data:')===0) return false;
-    return isAd(host(u)) || /googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|clickunder|popads|propellerads|exoclick|trafficjunky|\\/ads\\/|adserver/i.test(u);
+    return isAd(host(u)) || /googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|clickunder|popads|propellerads|exoclick|trafficjunky|\\/ads\\/|adserver|monetag|pavanesbedizen|acscdn|baillieumbered|histats|statcounter/i.test(u);
   }
   function sameSite(u){
     try{
@@ -230,10 +237,13 @@ export function shieldScript(pageOriginHost = "") {
     }catch(e){return false}
   }
 
+  function blockOpen(){return null;}
   try{
-    window.open=function(){return null;};
-    window.showModalDialog=function(){return null;};
+    window.open=blockOpen;
+    window.showModalDialog=blockOpen;
+    Object.defineProperty(window,'open',{configurable:true,writable:true,value:blockOpen});
   }catch(e){}
+  setInterval(function(){ try{ if(window.open!==blockOpen) window.open=blockOpen; }catch(e){} },500);
 
   try{
     var _assign=location.assign.bind(location);
@@ -367,7 +377,7 @@ export function shieldScript(pageOriginHost = "") {
         var z=parseInt(st.zIndex,10)||0;
         if(z<1000) return;
         var idc=((el.id||'')+' '+(el.className||'')).toLowerCase();
-        if(/player|video|jw|clappr|vjs|plyr|albaplayer/.test(idc)) return;
+        if(/player|video|jw|clappr|vjs|plyr|albaplayer|kbp|ysp|stream-player/.test(idc)) return;
         if(/ad|popup|modal|overlay|banner|consent|cookie|newsletter|promo/.test(idc)) hideEl(el);
         var r=el.getBoundingClientRect();
         if(r.width>window.innerWidth*0.85 && r.height>window.innerHeight*0.85){

@@ -164,6 +164,8 @@ export const MEDIA_ALLOWLIST = [
   "kora-sami.com",
   "splplayer",
   "worldchampion.fun",
+  "streamhostingcdn.top",
+  "sportspass.site",
   "majed-koora.com",
   "jwplayer.com",
   "jwplatform.com",

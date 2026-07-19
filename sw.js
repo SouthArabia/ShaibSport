@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v56";
+const CACHE = "shaib-sport-pwa-v57";
 const ASSETS = [
   "./",
   "./index.html",
@@ -91,6 +91,8 @@ const ALLOW_PARTS = [
   "kora-sami",
   "splplayer",
   "worldchampion",
+  "streamhostingcdn",
+  "sportspass",
   "alarabiya",
   "aljazeera",
   "thehlive",
