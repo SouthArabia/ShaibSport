@@ -236,11 +236,9 @@
       <div class="settings-row">
         <div>
           <label id="lbl-contact">تواصل</label>
-          <small>415apps@gmail.com</small>
         </div>
         <div style="display:flex;gap:8px">
           <a class="btn ghost" id="btn-wa" href="https://wa.me/15594035364" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="btn ghost" id="btn-mail" href="mailto:415apps@gmail.com">Email</a>
         </div>
       </div>
       <div class="settings-row">
@@ -304,7 +302,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=46";
+      var SW_URL = "./sw.js?v=47";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -322,7 +320,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=46"></script>
+  <script type="module" src="./js/app.js?v=47"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

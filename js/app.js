@@ -442,7 +442,6 @@ function paintChrome() {
   $("#privacy-body").textContent = t(lang, "privacyBody");
   $("#about-body").textContent = t(lang, "aboutBody");
   $("#btn-wa").textContent = t(lang, "openWhatsApp");
-  $("#btn-mail").textContent = t(lang, "email");
   if ($("#lbl-logout")) $("#lbl-logout").textContent = t(lang, "logout");
   if ($("#btn-logout")) $("#btn-logout").textContent = t(lang, "logout");
   $("#theme-classic").textContent = t(lang, "classic");
@@ -954,7 +953,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=46"),
+      navigator.serviceWorker.register("./sw.js?v=47"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
