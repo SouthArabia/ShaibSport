@@ -725,6 +725,38 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   padding: 8px 16px 20px;
 }
 
+/* Disclaimer stays collapsed until the user opens it */
+.settings-collapse {
+  margin: 0;
+}
+.settings-collapse-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.settings-collapse-summary::-webkit-details-marker {
+  display: none;
+}
+.settings-collapse-summary::after {
+  content: "›";
+  color: var(--muted);
+  font-size: 1.15rem;
+  font-weight: 700;
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.settings-collapse[open] > .settings-collapse-summary::after {
+  transform: rotate(-90deg);
+}
+.settings-collapse-summary label {
+  pointer-events: none;
+  cursor: pointer;
+}
+
 /* ── Player overlay ── */
 .player-sheet {
   position: fixed;
