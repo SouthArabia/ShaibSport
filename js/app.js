@@ -317,6 +317,7 @@ function ensurePlayer() {
       state.hls = hls;
     },
     t: (key) => t(state.prefs.lang, key),
+    isAutoSkipEnabled: () => state.prefs.autoSkip !== false,
   });
   return state.player;
 }
@@ -603,9 +604,13 @@ function renderIptv() {
   }
 
   const q = state.iptv.query.trim().toLowerCase();
+  const autoSkipOn = state.prefs.autoSkip !== false;
   let html = `
     <div class="iptv-toolbar">
       <input id="iptv-search" type="search" enterkeyhint="search" placeholder="${t(lang, "iptvSearch")}" value="${state.iptv.query.replace(/"/g, "&quot;")}" />
+      <button type="button" id="iptv-autoskip" class="btn ghost autoskip-toggle ${autoSkipOn ? "on" : "off"}" aria-pressed="${autoSkipOn}">
+        ${t(lang, autoSkipOn ? "autoSkipOn" : "autoSkipOff")}
+      </button>
     </div>`;
 
   if (state.iptv.view === "channels" && state.iptv.group) {
@@ -721,6 +726,10 @@ function renderIptv() {
       const len = input.value.length;
       input.setSelectionRange(len, len);
     }
+  });
+  root.querySelector("#iptv-autoskip")?.addEventListener("click", () => {
+    state.prefs = store.save({ autoSkip: state.prefs.autoSkip === false });
+    renderIptv();
   });
   root.querySelector("#iptv-back")?.addEventListener("click", () => {
     state.iptv.view = "groups";
