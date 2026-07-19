@@ -990,65 +990,25 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   background: var(--accent-soft);
 }
 
-/* Watch / شاهد الان — same size as other tabs, gold highlight */
-.tabbar button.tab-watch,
-.tabbar button[data-tab="matches"] {
-  color: #1a1400;
-  background: linear-gradient(160deg, #f0d060 0%, #d4af37 48%, #b8922a 100%);
-  border: 1px solid rgba(255, 236, 170, 0.45);
-  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.28);
-  font-weight: 800;
-}
-
-.tabbar button.tab-watch svg,
-.tabbar button[data-tab="matches"] svg {
-  stroke: none;
-  fill: currentColor;
-}
-
-.tabbar button.tab-watch .tab-watch-ring {
-  display: none;
-}
-
+/* Watch / شاهد الان — same style as other tabs + green ping */
 .tabbar button.tab-watch::after,
 .tabbar button[data-tab="matches"]::after {
   content: "";
   position: absolute;
   top: 6px;
   inset-inline-end: 22%;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #ff3b30;
-  box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55);
-  animation: watch-pulse 1.5s ease-out infinite;
+  background: #34c759;
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55);
+  animation: watch-ping 1.5s ease-out infinite;
 }
 
-.tabbar button.tab-watch.active,
-.tabbar button[data-tab="matches"].active {
-  color: #140f00;
-  background: linear-gradient(160deg, #ffe08a 0%, #e0bc3a 45%, #c9a227 100%);
-  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.36);
-}
-
-[data-theme="royale"] .tabbar button.tab-watch,
-[data-theme="royale"] .tabbar button[data-tab="matches"] {
-  color: #fff5f5;
-  background: linear-gradient(160deg, #ff6b6b 0%, #d42b2b 50%, #9e1a1a 100%);
-  border-color: rgba(255, 160, 160, 0.4);
-  box-shadow: 0 2px 10px rgba(212, 43, 43, 0.3);
-}
-
-[data-theme="royale"] .tabbar button.tab-watch.active,
-[data-theme="royale"] .tabbar button[data-tab="matches"].active {
-  color: #fff;
-  background: linear-gradient(160deg, #ff8a8a 0%, #e03535 45%, #b01f1f 100%);
-}
-
-@keyframes watch-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55); }
-  70% { box-shadow: 0 0 0 6px rgba(255, 59, 48, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+@keyframes watch-ping {
+  0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(52, 199, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
 }
 
 .install-banner {
