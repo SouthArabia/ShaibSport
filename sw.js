@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v66";
+const CACHE = "shaib-sport-pwa-v67";
 const ASSETS = [
   "./",
   "./index.html",
@@ -252,6 +252,7 @@ self.addEventListener("fetch", (event) => {
     host.includes("cloudfront") ||
     host.includes("streamhostingcdn") ||
     host.includes("776740.ir") ||
+    host.includes("cdn.ir") ||
     /\.m3u8($|\?)/i.test(url.pathname + url.search) ||
     /\.ts($|\?)/i.test(url.pathname + url.search);
   if (!sameOrigin && isStreamHost) {
