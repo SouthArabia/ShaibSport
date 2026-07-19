@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v55";
+const CACHE = "shaib-sport-pwa-v56";
 const ASSETS = [
   "./",
   "./index.html",
@@ -239,6 +239,35 @@ self.addEventListener("fetch", (event) => {
   // Same-origin player proxy — fetch remote HTML, strip ads, keep real origin/referrer
   if (sameOrigin && typeof self.SHAIB_IS_PLAYER_PROXY === "function" && self.SHAIB_IS_PLAYER_PROXY(request.url)) {
     event.respondWith(self.SHAIB_HANDLE_PLAYER_PROXY(request));
+    return;
+  }
+
+  // HLS/CDN from proxied players often require the upstream player Referer
+  const host = url.hostname.toLowerCase();
+  const isStreamHost =
+    host.includes("amazonaws") ||
+    host.includes("cloudfront") ||
+    host.includes("streamhostingcdn") ||
+    host.includes("776740.ir") ||
+    /\.m3u8($|\?)/i.test(url.pathname + url.search) ||
+    /\.ts($|\?)/i.test(url.pathname + url.search);
+  if (!sameOrigin && isStreamHost) {
+    event.respondWith(
+      fetch(request.url, {
+        method: request.method,
+        headers: {
+          Accept: request.headers.get("Accept") || "*/*",
+          "User-Agent":
+            request.headers.get("User-Agent") ||
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+        },
+        referrer: "https://m4.kora-sami.com/",
+        referrerPolicy: "unsafe-url",
+        mode: "cors",
+        credentials: "omit",
+        redirect: "follow",
+      }).catch(() => fetch(request))
+    );
     return;
   }
 

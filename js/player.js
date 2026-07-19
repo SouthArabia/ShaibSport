@@ -17,6 +17,10 @@ import {
 const SITE_SANDBOX =
   "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads";
 
+/** Player embeds: scripts/media OK, never allow-popups / top navigation */
+const PLAYER_NO_POPUP_SANDBOX =
+  "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads";
+
 /** Never block opening the player — EasyList loads in background. */
 async function ensurePlayerFilters() {
   try {
@@ -102,7 +106,10 @@ function toolbar(buttons) {
  * Player iframe. Stream hosts reject sandbox + no-referrer ("إخفاء المصدر").
  * Never set referrerpolicy=no-referrer on embeds — players block that.
  */
-function mountLockedIframe(url, { sandbox = false, siteLock = false } = {}) {
+function mountLockedIframe(
+  url,
+  { sandbox = false, siteLock = false, noPopups = false } = {}
+) {
   const frame = document.createElement("iframe");
   frame.className = "player-iframe";
   frame.src = url;
@@ -113,14 +120,17 @@ function mountLockedIframe(url, { sandbox = false, siteLock = false } = {}) {
   frame.setAttribute("allowfullscreen", "");
   // Explicit referrer — empty/no-referrer triggers syria-player "إخفاء المصدر" block
   frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-  if (sandbox || siteLock) {
+  if (sandbox || siteLock || noPopups) {
     // NO allow-popups, NO allow-top-navigation — stay inside iframe
-    frame.setAttribute("sandbox", SITE_SANDBOX);
+    frame.setAttribute(
+      "sandbox",
+      siteLock || sandbox ? SITE_SANDBOX : PLAYER_NO_POPUP_SANDBOX
+    );
   }
   return frame;
 }
 
-function configureFrame(frame, { siteLock = false } = {}) {
+function configureFrame(frame, { siteLock = false, noPopups = false } = {}) {
   frame.setAttribute(
     "allow",
     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
@@ -129,6 +139,8 @@ function configureFrame(frame, { siteLock = false } = {}) {
   frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
   if (siteLock) {
     frame.setAttribute("sandbox", SITE_SANDBOX);
+  } else if (noPopups) {
+    frame.setAttribute("sandbox", PLAYER_NO_POPUP_SANDBOX);
   }
   return frame;
 }
@@ -346,16 +358,27 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Direct embed for hosts that need their own origin/referer for HLS
-      if (/kora-sami|splplayer|worldchampion/i.test(url)) {
+      // Channel 1 (kora-sami): SW proxy = autoplay inject + popup kill
+      if (/kora-sami|splplayer/i.test(url)) {
         const frame = configureFrame(
-          mountLockedIframe(url, { sandbox: false })
+          mountLockedIframe(proxiedPlayerUrl(url), { noPopups: true }),
+          { noPopups: true }
+        );
+        currentIframe = frame;
+        return { frame, mode: "proxied-ch1" };
+      }
+      // worldchampion keeps native origin for HLS referer; still block popups
+      if (/worldchampion/i.test(url)) {
+        const frame = configureFrame(
+          mountLockedIframe(url, { noPopups: true }),
+          { noPopups: true }
         );
         currentIframe = frame;
         return { frame, mode: "direct-player" };
       }
       const frame = configureFrame(
-        mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
+        mountLockedIframe(proxiedPlayerUrl(url), { noPopups: true }),
+        { noPopups: true }
       );
       currentIframe = frame;
       return { frame, mode: "proxied" };

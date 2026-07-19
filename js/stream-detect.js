@@ -254,6 +254,8 @@ export function autoPlayScript() {
   var tries=0;
   function clickPlayUi(){
     var sels=[
+      '.play-wrapper .play-button','.media-control-button[data-playpause]',
+      '.clappr-player .play-wrapper','[data-player] .play-button',
       '.vjs-big-play-button','.jw-icon-playback','.plyr__control--overlaid',
       'button.watch-btn','.watch-btn','[class*="play-btn"]','[class*="PlayBtn"]',
       '.STING-web-SVG-Play','[class*="STING-web-SVG-Play"]',
