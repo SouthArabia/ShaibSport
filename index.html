@@ -160,6 +160,16 @@
     <div id="today-list"></div>
   </main>
 
+  <main class="page" data-page="iptv" hidden>
+    <div class="section-head">
+      <div>
+        <h1 data-i18n="iptvTitle">IPTV</h1>
+        <p data-i18n="iptvSub">قنوات البث المباشر من iptv-org</p>
+      </div>
+    </div>
+    <div id="iptv-root"></div>
+  </main>
+
   <main class="page" data-page="international" hidden>
     <div class="section-head">
       <div>
@@ -254,6 +264,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6v5H4zM14 6h6v5h-6zM9 14h6v5H9z"/><path d="M7 11v3h10v-3"/></svg>
       <span>International</span>
     </button>
+    <button type="button" data-tab="iptv">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H4z"/><path d="m8 19 4-4 4 4"/><path d="M12 15v4"/></svg>
+      <span>IPTV</span>
+    </button>
     <button type="button" data-tab="settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.2 2.2M16.8 16.8 19 19M19 5l-2.2 2.2M5 19l2.2-2.2"/></svg>
       <span>Settings</span>
@@ -265,7 +279,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=26";
+      var SW_URL = "./sw.js?v=27";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -283,7 +297,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=26"></script>
+  <script type="module" src="./js/app.js?v=27"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

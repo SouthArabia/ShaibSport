@@ -12,8 +12,25 @@ import { isLoggedIn, login, logout } from "./auth.js";
 import { createPlayerController } from "./player.js";
 import { prepareFilters } from "./filter-engine.js";
 import { installGlobalAdblock, loadShieldedIframe } from "./global-adblock.js";
+import {
+  IPTV_PLAYLIST_URL,
+  fetchIptvPlaylist,
+  groupChannels,
+} from "./iptv.js";
 
 const SOUTH_ARABIA_FLAG = "./assets/flags/south-yemen.svg";
+
+/** FIFA / UK home-nation codes → flagcdn slug */
+const FLAG_CDN = {
+  eng: "gb-eng",
+  sco: "gb-sct",
+  wal: "gb-wls",
+  nir: "gb-nir",
+  "gb-eng": "gb-eng",
+  "gb-sct": "gb-sct",
+  "gb-wls": "gb-wls",
+  "gb-nir": "gb-nir",
+};
 
 function isSouthArabiaTeam(team) {
   const blob = [
@@ -38,13 +55,31 @@ function isSouthArabiaTeam(team) {
   );
 }
 
+/** Resolve a flagcdn / ISO code for a team (fixes England/Scotland gb-eng emoji bug). */
+function resolveFlagCode(team, name) {
+  const raw = String(team?.flagCode || team?.abbreviation || "").toLowerCase().trim();
+  const label = String(name || team?.name || team?.nameAr || "").toLowerCase();
+  if (/england|إنجل/.test(label)) return "gb-eng";
+  if (/scotland|اسكتل/.test(label)) return "gb-sct";
+  if (/wales|ويلز/.test(label)) return "gb-wls";
+  if (/northern ireland|إيرلندا الشمالية/.test(label)) return "gb-nir";
+  if (FLAG_CDN[raw]) return FLAG_CDN[raw];
+  if (raw.includes("-")) return raw;
+  if (/^[a-z]{2}$/.test(raw)) return raw;
+  return "";
+}
+
 function teamFlagHtml(team, name) {
   if (isSouthArabiaTeam(team) || /الجنوب\s*العربي/i.test(name || "")) {
     return `<img class="flag-img" src="${SOUTH_ARABIA_FLAG}" alt="الجنوب العربي" loading="lazy" onerror="this.outerHTML='<div class=&quot;flag&quot;>🇾🇪</div>'" />`;
   }
-  if (team.flagCode) {
+  const code = resolveFlagCode(team, name);
+  if (code.includes("-") || code.length > 2) {
+    return `<img class="flag-img" src="https://flagcdn.com/w80/${code}.png" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;flag&quot;>🏳️</div>'" />`;
+  }
+  if (code.length === 2) {
     const flag = String.fromCodePoint(
-      ...[...String(team.flagCode).toUpperCase()].map((c) => 127397 + c.charCodeAt(0))
+      ...[...code.toUpperCase()].map((c) => 127397 + c.charCodeAt(0))
     );
     return `<div class="flag">${flag}</div>`;
   }
@@ -58,11 +93,20 @@ const state = {
     today: null,
     international: null,
     knockout: null,
+    iptv: null,
+  },
+  iptv: {
+    view: "groups", // groups | channels
+    group: null,
+    query: "",
+    page: 0,
   },
   deferredInstall: null,
   hls: null,
   player: null,
 };
+
+const IPTV_PAGE_SIZE = 48;
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -76,14 +120,17 @@ function letterCrest(name) {
 function crest(url, name, flagCode) {
   const urls = [];
   if (url) urls.push(url);
-  const fromLogo = String(url || "").match(/\/countries\/\d+\/([a-z0-9-]{2,6})\./i);
-  const code = String(flagCode || fromLogo?.[1] || "").toLowerCase();
-  if (code.length === 2) {
+  const fromLogo = String(url || "").match(/\/countries\/\d+\/([a-z0-9-]{2,8})\./i);
+  const resolved = resolveFlagCode({ flagCode, abbreviation: flagCode }, name);
+  const code = resolved || String(flagCode || fromLogo?.[1] || "").toLowerCase();
+  if (code.includes("-") || code.length === 2) {
     urls.push(`https://flagcdn.com/w80/${code}.png`);
     urls.push(`https://flagcdn.com/${code}.svg`);
   } else if (code.length === 3) {
-    // ESPN uses ISO3 in path; flagcdn wants ISO2 — still try ESPN path + flagsapi common codes
     urls.push(`https://a.espncdn.com/i/teamlogos/countries/500/${code}.png`);
+    if (FLAG_CDN[code]) {
+      urls.push(`https://flagcdn.com/w80/${FLAG_CDN[code]}.png`);
+    }
   }
   if (!urls.length) return letterCrest(name);
 
@@ -413,12 +460,193 @@ function renderKnockout(el, data, lang) {
     .join("");
 }
 
+function iptvTileHtml(tile) {
+  const logo = tile.logo
+    ? `<img class="tile-logo" src="${tile.logo}" alt="" loading="lazy" onerror="this.style.display='none'" />`
+    : icons[tile.icon] || icons.tv;
+  const badge = tile.live ? `<span class="live-pill">مباشر</span>` : "";
+  return `
+    <button type="button" class="tile ${tile.emphasized ? "emphasized" : ""}" data-iptv-id="${tile.id}">
+      <div class="tile-top">
+        ${logo}
+        ${badge}
+      </div>
+      <div>
+        <div class="tile-title">${tile.title}</div>
+        ${tile.subtitle ? `<div class="tile-sub">${tile.subtitle}</div>` : ""}
+      </div>
+    </button>`;
+}
+
+function renderIptv() {
+  const root = $("#iptv-root");
+  if (!root) return;
+  const lang = state.prefs.lang;
+  const data = state.cache.iptv;
+  if (!data?.groups?.length) {
+    root.innerHTML = `<div class="empty">${t(lang, "empty")}</div>`;
+    return;
+  }
+
+  const q = state.iptv.query.trim().toLowerCase();
+  let html = `
+    <div class="iptv-toolbar">
+      <input id="iptv-search" type="search" enterkeyhint="search" placeholder="${t(lang, "iptvSearch")}" value="${state.iptv.query.replace(/"/g, "&quot;")}" />
+    </div>`;
+
+  if (state.iptv.view === "channels" && state.iptv.group) {
+    const group = data.groups.find((g) => g.name === state.iptv.group);
+    let list = group?.channels || [];
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q));
+    const page = state.iptv.page;
+    const slice = list.slice(0, (page + 1) * IPTV_PAGE_SIZE);
+    html += `
+      <div class="iptv-back-row">
+        <button type="button" class="btn ghost" id="iptv-back">‹ ${t(lang, "iptvBack")}</button>
+        <strong>${state.iptv.group}</strong>
+        <span class="muted">${list.length}</span>
+      </div>
+      <div class="canvas-grid">
+        ${slice
+          .map((ch) =>
+            iptvTileHtml({
+              id: `ch:${ch.url}`,
+              title: ch.name,
+              subtitle: ch.group,
+              logo: ch.logo,
+              icon: "tv",
+              live: true,
+              url: ch.url,
+            })
+          )
+          .join("")}
+      </div>`;
+    if (slice.length < list.length) {
+      html += `<div style="margin:14px 0;text-align:center"><button type="button" class="btn" id="iptv-more">${t(lang, "iptvMore")}</button></div>`;
+    }
+  } else {
+    let groups = data.groups;
+    if (q) {
+      groups = groups
+        .map((g) => ({
+          ...g,
+          channels: g.channels.filter((c) => c.name.toLowerCase().includes(q)),
+          count: g.channels.filter((c) => c.name.toLowerCase().includes(q)).length,
+        }))
+        .filter((g) => g.count > 0);
+    }
+    html += `
+      <div class="canvas-wide" style="margin-bottom:12px">
+        ${tileButton({
+          id: "iptv-main",
+          kind: "ch4",
+          title: t(lang, "iptvMain"),
+          subtitle: IPTV_PLAYLIST_URL.replace(/^https?:\/\//, ""),
+          icon: "tv",
+          emphasized: true,
+        })}
+      </div>
+      <div class="canvas-grid">
+        ${groups
+          .map((g) =>
+            iptvTileHtml({
+              id: `grp:${g.name}`,
+              title: g.name,
+              subtitle: `${g.count} ${t(lang, "iptvChannels")}`,
+              icon: /sport/i.test(g.name) ? "bolt" : "tv",
+              emphasized: /sport/i.test(g.name),
+            })
+          )
+          .join("")}
+      </div>`;
+  }
+
+  root.innerHTML = html;
+
+  root.querySelector("#iptv-search")?.addEventListener("input", (e) => {
+    state.iptv.query = e.target.value || "";
+    state.iptv.page = 0;
+    renderIptv();
+    const input = $("#iptv-search");
+    if (input) {
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+  });
+  root.querySelector("#iptv-back")?.addEventListener("click", () => {
+    state.iptv.view = "groups";
+    state.iptv.group = null;
+    state.iptv.page = 0;
+    renderIptv();
+  });
+  root.querySelector("#iptv-more")?.addEventListener("click", () => {
+    state.iptv.page += 1;
+    renderIptv();
+  });
+  root.querySelector('[data-tile-id="iptv-main"]')?.addEventListener("click", () => {
+    const sports = data.groups.find((g) => /sport/i.test(g.name));
+    if (sports) {
+      state.iptv.view = "channels";
+      state.iptv.group = sports.name;
+      state.iptv.page = 0;
+      renderIptv();
+    }
+  });
+  root.querySelectorAll("[data-iptv-id]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.iptvId || "";
+      if (id.startsWith("grp:")) {
+        state.iptv.view = "channels";
+        state.iptv.group = id.slice(4);
+        state.iptv.page = 0;
+        renderIptv();
+        return;
+      }
+      if (id.startsWith("ch:")) {
+        const url = id.slice(3);
+        const group = data.groups.find((g) => g.name === state.iptv.group);
+        const ch = group?.channels.find((c) => c.url === url);
+        openPlayer({
+          kind: "live",
+          id: url,
+          title: ch?.name || t(lang, "iptv"),
+          url,
+        });
+      }
+    });
+  });
+}
+
+async function loadIptv(force = false) {
+  const root = $("#iptv-root");
+  if (!root) return;
+  const lang = state.prefs.lang;
+  if (!force && state.cache.iptv) {
+    renderIptv();
+    return;
+  }
+  root.innerHTML = `<div class="loading">${t(lang, "loading")}</div>`;
+  try {
+    const channels = await fetchIptvPlaylist(IPTV_PLAYLIST_URL);
+    state.cache.iptv = { channels, groups: groupChannels(channels), url: IPTV_PLAYLIST_URL };
+    state.iptv.view = "groups";
+    state.iptv.group = null;
+    state.iptv.page = 0;
+    renderIptv();
+  } catch {
+    root.innerHTML = `<div class="error">${t(lang, "error")}<div style="margin-top:12px"><button class="btn" id="iptv-retry">${t(lang, "refresh")}</button></div></div>`;
+    $("#iptv-retry")?.addEventListener("click", () => loadIptv(true));
+  }
+}
+
 async function refreshActive(force = false) {
   paintChrome();
   const tab = state.prefs.tab;
   if (tab === "matches") await loadMatches(force);
   else if (tab === "today") await loadToday(force);
   else if (tab === "international") await loadInternational(force);
+  else if (tab === "iptv") await loadIptv(force);
 }
 
 function switchTab(tab) {
@@ -561,7 +789,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=26"),
+      navigator.serviceWorker.register("./sw.js?v=27"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

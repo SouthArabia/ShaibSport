@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v26";
+const CACHE = "shaib-sport-pwa-v27";
 const ASSETS = [
   "./",
   "./index.html",
@@ -27,6 +27,7 @@ const ASSETS = [
   "./js/bot-guard.js",
   "./js/player-proxy-sw.js",
   "./js/stream-detect.js",
+  "./js/iptv.js",
   "./js/player.js",
   "./js/app.js",
   "./config/live_config.json",
@@ -111,6 +112,8 @@ const ALLOW_PARTS = [
   "corsproxy",
   "cors.sh",
   "allorigins",
+  "iptv-org",
+  "github.io",
   "365scores",
   "easylist",
   "adtidy.org",
@@ -274,7 +277,10 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("yoyo.org") ||
     url.hostname.includes("ublockorigin.github.io") ||
     url.hostname.includes("hagezi") ||
-    url.pathname.includes(".m3u8");
+    url.hostname.includes("iptv-org.github.io") ||
+    url.hostname.includes("github.io") ||
+    url.pathname.includes(".m3u8") ||
+    url.pathname.endsWith(".m3u");
 
   if (isApi) {
     event.respondWith(fetch(request).catch(() => caches.match(request)));
