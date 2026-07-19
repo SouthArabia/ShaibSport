@@ -22,6 +22,12 @@
       .replace(/\\\\/g, "\\");
   }
 
+  function isPlayerAssetUrl(u) {
+    return /syria-player|shootsync|albaplayer|beinmax|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|hlsjs|videojs|plyr|clappr|googleapis|gstatic/i.test(
+      String(u || "")
+    );
+  }
+
   function stripAds(html) {
     let out = String(html || "");
     const isAdReq =
@@ -29,16 +35,17 @@
         ? global.SHAIB_IS_AD_REQUEST
         : (u) => AD_SRC_RE.test(String(u || ""));
 
-    // Remove ad scripts / iframes / pixels (EasyList hosts via SW + regex)
-    out = out.replace(/<script\b[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (full, src) =>
-      AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad script removed -->" : full
-    );
-    out = out.replace(/<iframe\b[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/iframe>/gi, (full, src) =>
-      AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad iframe removed -->" : full
-    );
+    // Remove ad scripts / iframes — never strip the stream player itself
+    out = out.replace(/<script\b[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (full, src) => {
+      if (isPlayerAssetUrl(src)) return full;
+      return AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad script removed -->" : full;
+    });
+    out = out.replace(/<iframe\b[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/iframe>/gi, (full, src) => {
+      if (isPlayerAssetUrl(src)) return full;
+      return AD_SRC_RE.test(full) || isAdReq(src) ? "<!-- shaib: ad iframe removed -->" : full;
+    });
     out = out.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (full) => {
       if (/function\s+_kill|SB_Blocked|تنبيه حماية/i.test(full)) {
-        // Drop anti-embed killer — we serve same-origin; keep player working
         return "<!-- shaib: embed guard removed -->";
       }
       if (
@@ -49,29 +56,23 @@
       }
       return full;
     });
-    // Naked ad loader leftovers
     out = out.replace(/aclib\.run(?:Pop|Banner)\([\s\S]*?\);?/gi, "/* shaib: aclib removed */");
     return out;
   }
 
+  /** Light EasyList runtime — no giant host dump (that was blanking the player). */
   function easyListRuntimeShield() {
-    const hosts = (
-      typeof global.SHAIB_GET_AD_HOSTS === "function" ? global.SHAIB_GET_AD_HOSTS() : []
-    ).slice(0, 12000);
-    const map = Object.create(null);
-    for (const h of hosts) map[String(h).toLowerCase()] = 1;
     return `<script id="shaib-easylist-runtime">
 (function(){
   if(window.__shaibEasyListRuntime)return;window.__shaibEasyListRuntime=true;
-  var blocked=${JSON.stringify(map)};
-  function host(u){try{return new URL(u,location.href).hostname.toLowerCase()}catch(e){return ''}}
-  function isAd(h){
-    if(!h)return false;
-    var cur=h;
-    while(cur){ if(blocked[cur]) return true; var i=cur.indexOf('.'); if(i===-1)break; cur=cur.slice(i+1); }
-    return /(^|\\.)ads?\\d*\\.|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|taboola|outbrain|adnxs|prebid|acscdn|baillieumbered/i.test(h);
+  var allow=/syria-player|shootsync|albaplayer|beinmax|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|googleapis|gstatic|hlsjs|videojs|plyr/i;
+  var adRe=/acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|adservice|adsystem|\\/pagead\\/|adsbygoogle|popunder|clickunder/i;
+  function bad(u){
+    u=String(u||'');
+    if(!u||u.indexOf('blob:')===0||u.indexOf('data:')===0) return false;
+    if(allow.test(u)) return false;
+    return adRe.test(u);
   }
-  function bad(u){ u=String(u||''); if(!u||u.indexOf('blob:')===0||u.indexOf('data:')===0)return false; return isAd(host(u))||/googlesyndication|doubleclick\\.net|\\/pagead\\/|adsbygoogle|popunder|aclib|acscdn/i.test(u); }
   try{window.open=function(){return null;};}catch(e){}
   try{
     var _x=XMLHttpRequest.prototype.open;
@@ -83,13 +84,12 @@
   }catch(e){}
   function scrub(){
     try{
-      document.querySelectorAll('script[src],iframe[src],img[src]').forEach(function(el){
+      document.querySelectorAll('script[src],iframe[src]').forEach(function(el){
         var v=el.src||''; if(bad(v)) el.remove();
       });
     }catch(e){}
   }
-  scrub(); setInterval(scrub,900);
-  try{new MutationObserver(scrub).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+  scrub(); setInterval(scrub,1000);
 })();
 </script>`;
   }
@@ -97,9 +97,10 @@
   function injectShield(html, pageUrl) {
     const base = `<base href="${String(pageUrl).replace(/"/g, "&quot;")}">`;
     const shield = `<style id="shaib-player-cosmetic">
-iframe[src*="ad"],iframe[src*="banner"],iframe[src*="pop"],iframe[id*="ad"],iframe[class*="ad"],
+iframe[src*="doubleclick"],iframe[src*="googlesyndication"],iframe[src*="acscdn"],
+iframe[src*="popads"],iframe[id*="google_ads"],iframe[class*="adsbox"],
 [class*="adsbox"],[id*="adsbox"],[class*="ad-container"],[id*="ad-container"],
-[class*="popup"],[id*="popup"],[class*="OverlayAd"],a[href*="doubleclick"],
+[class*="OverlayAd"],a[href*="doubleclick"],
 #aclib-wrapper,.aclib-widget,[class*="aclib"],
 /* AlbaPlayer / syria-live chrome */
 .aplr-link,a.aplr-link,.aplr-exbtns,

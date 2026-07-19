@@ -3,7 +3,6 @@ import {
   cleanHtml,
   isAdUrl,
   syncAdblockFromEngine,
-  playerAdblockInject,
 } from "./adblock.js";
 import { prepareFilters } from "./filter-engine.js";
 import {
@@ -13,19 +12,17 @@ import {
   autoPlayScript,
 } from "./stream-detect.js";
 
-/** Prefer EasyList ready; seed lists still work if network is slow. */
+/** Never block opening the player — EasyList loads in background. */
 async function ensurePlayerFilters() {
   try {
     await Promise.race([
       prepareFilters(),
-      new Promise((r) => setTimeout(r, 2500)),
+      new Promise((r) => setTimeout(r, 400)),
     ]);
   } catch (_) {}
-  syncAdblockFromEngine();
-}
-
-function tileAdblockExtra(url = "") {
-  return playerAdblockInject(url);
+  try {
+    syncAdblockFromEngine();
+  } catch (_) {}
 }
 
 function withTimeout(promise, ms) {
@@ -270,10 +267,10 @@ export function createPlayerController(opts) {
     } catch (_) {}
   }
 
-  async function playHls(title, url) {
+  function playHls(title, url) {
     titleEl.textContent = title;
     clear();
-    await ensurePlayerFilters();
+    ensurePlayerFilters().catch(() => {});
     // Bottom dock stays outside the video so users can switch/exit while watching
     setLiveDock(true);
 
@@ -332,11 +329,10 @@ export function createPlayerController(opts) {
   }
 
   async function mountShielded(url, injectExtra = "") {
-    await ensurePlayerFilters(); // EasyList + other lists for every tile
+    // Show player immediately; refresh filters in background
+    ensurePlayerFilters().catch(() => {});
 
-    const easylistShield = tileAdblockExtra(url);
-
-    // Stream hosts: same-origin SW proxy (EasyList hosts applied in SW + proxy shield)
+    // Stream hosts: same-origin SW proxy (keeps syria-player working)
     if (isDirectPlayerUrl(url)) {
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
@@ -345,32 +341,32 @@ export function createPlayerController(opts) {
       return { frame, mode: "proxied" };
     }
 
-    const html = await fetchHtml(url);
-    if (html && /<html|<body|<div|<script/i.test(html)) {
-      let cleaned = cleanHtml(html, url); // includes EasyList shield
-      if (injectExtra) {
-        const extras = `<script>${injectExtra}</script>`;
-        if (/<\/body>/i.test(cleaned)) {
-          cleaned = cleaned.replace(/<\/body>/i, `${extras}</body>`);
-        } else {
-          cleaned += extras;
+    try {
+      const html = await fetchHtml(url);
+      if (html && /<html|<body|<div|<script/i.test(html)) {
+        let cleaned;
+        try {
+          cleaned = cleanHtml(html, url); // EasyList shield (capped)
+        } catch (_) {
+          cleaned = html;
         }
-      }
-      if (!cleaned.includes("shaib-adblock-shield") && easylistShield) {
-        if (/<head[^>]*>/i.test(cleaned)) {
-          cleaned = cleaned.replace(/<head[^>]*>/i, (m) => `${m}\n${easylistShield}`);
-        } else {
-          cleaned = `${easylistShield}${cleaned}`;
+        if (injectExtra) {
+          const extras = `<script>${injectExtra}</script>`;
+          if (/<\/body>/i.test(cleaned)) {
+            cleaned = cleaned.replace(/<\/body>/i, `${extras}</body>`);
+          } else {
+            cleaned += extras;
+          }
         }
+        const frame = configureFrame(document.createElement("iframe"));
+        frame.className = "player-iframe";
+        frame.srcdoc = cleaned;
+        currentIframe = frame;
+        return { frame, mode: "shielded" };
       }
-      const frame = configureFrame(document.createElement("iframe"));
-      frame.className = "player-iframe";
-      frame.srcdoc = cleaned;
-      currentIframe = frame;
-      return { frame, mode: "shielded" };
-    }
+    } catch (_) {}
 
-    // Last resort: direct iframe (no sandbox / no referrer hiding)
+    // Last resort: direct iframe so the player always shows
     const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
     currentIframe = frame;
     return { frame, mode: "direct" };
@@ -392,7 +388,7 @@ export function createPlayerController(opts) {
   }
 
   function openLive(tile) {
-    return playHls(tile.title, tile.url);
+    playHls(tile.title, tile.url);
   }
 
   /** Browser / Fox — always shielded (continuous AdBlock) */
@@ -421,20 +417,25 @@ export function createPlayerController(opts) {
     stage.className = "player-stage";
     wrap.appendChild(stage);
 
+    // Mount shell first so the player UI always appears
+    body.innerHTML = "";
+    body.appendChild(wrap);
+
     let inject = syriaHelpersScript() + autoPlayScript();
     if (tile.autoFastServer) inject += fastServerScript();
 
-    const mounted = await mountShielded(tile.url, inject);
-    stage.innerHTML = "";
-    if (mounted.mode === "blocked-wrap") {
+    try {
+      const mounted = await mountShielded(tile.url, inject);
+      stage.innerHTML = "";
       stage.appendChild(mounted.frame);
-    } else {
-      stage.appendChild(mounted.frame);
+      status.textContent = t("adblockScanning");
+    } catch (_) {
+      stage.innerHTML = "";
+      const frame = configureFrame(mountLockedIframe(tile.url, { sandbox: false }));
+      stage.appendChild(frame);
+      currentIframe = frame;
+      status.textContent = t("adblockOn");
     }
-    status.textContent = t("adblockScanning");
-
-    body.innerHTML = "";
-    body.appendChild(wrap);
   }
 
   /** Domain — shield + stream detect; no unblocked direct open */
@@ -496,6 +497,8 @@ export function createPlayerController(opts) {
     wrap.appendChild(tools);
     wrap.appendChild(status);
     wrap.appendChild(stage);
+    body.innerHTML = "";
+    body.appendChild(wrap);
 
     listenForStreams((streamUrl) => {
       status.textContent = t("streamFound");
@@ -503,13 +506,18 @@ export function createPlayerController(opts) {
     });
 
     const inject = streamDetectScript(mode) + syriaHelpersScript() + autoPlayScript();
-    const mounted = await mountShielded(tile.url, inject);
-    stage.innerHTML = "";
-    stage.appendChild(mounted.frame);
-    status.textContent = `${t("adblockOn")} · ${t("domainAuto")}`;
-
-    body.innerHTML = "";
-    body.appendChild(wrap);
+    try {
+      const mounted = await mountShielded(tile.url, inject);
+      stage.innerHTML = "";
+      stage.appendChild(mounted.frame);
+      status.textContent = `${t("adblockOn")} · ${t("domainAuto")}`;
+    } catch (_) {
+      stage.innerHTML = "";
+      const frame = configureFrame(mountLockedIframe(tile.url, { sandbox: false }));
+      stage.appendChild(frame);
+      currentIframe = frame;
+      status.textContent = t("adblockOn");
+    }
     try {
       currentIframe?.contentWindow?._shaibSetAutoClick?.(true);
     } catch (_) {}

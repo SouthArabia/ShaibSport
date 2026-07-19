@@ -41,9 +41,6 @@ const ALLOW_HOST_PARTS = [
 
 const EXTRA_COSMETIC_BASE = [
   ...COSMETIC_SELECTORS,
-  "[class*='popup']",
-  "[id*='popup']",
-  "[class*='Popover']",
   "[class*='modal-ad']",
   "[class*='interstitial']",
   "[class*='overlay-ad']",
@@ -52,15 +49,10 @@ const EXTRA_COSMETIC_BASE = [
   ".qc-cmp2-container",
   "#onetrust-banner-sdk",
   ".ot-sdk-container",
-  "[class*='cookie']",
-  "[id*='cookie']",
-  "[class*='newsletter']",
-  "iframe[src*='ad']",
-  "iframe[src*='banner']",
-  "iframe[src*='track']",
-  "iframe[src*='pop']",
-  "iframe[id*='ad']",
-  "iframe[name*='ad']",
+  "iframe[src*='doubleclick']",
+  "iframe[src*='googlesyndication']",
+  "iframe[src*='acscdn']",
+  "iframe[src*='popads']",
   "a[href*='doubleclick']",
   "a[target='_blank'][href*='http'][rel*='sponsored']",
 ];
@@ -69,9 +61,9 @@ const EXTRA_COSMETIC_BASE = [
 let hostSet = new Set(AD_HOSTS.map((h) => h.toLowerCase()));
 let cosmeticList = [...EXTRA_COSMETIC_BASE];
 
-/** Cap for injecting into srcdoc (full list stays in SW + engineIsAd*) */
-const SHIELD_HOST_CAP = 30_000;
-const SHIELD_COSMETIC_CAP = 6_000;
+/** Cap for injecting into srcdoc — keep small so the player HTML still loads */
+const SHIELD_HOST_CAP = 2_500;
+const SHIELD_COSMETIC_CAP = 800;
 
 /**
  * Sync EasyList / filter-engine cosmetics (+ host snapshot for srcdoc shields).

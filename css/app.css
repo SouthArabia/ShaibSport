@@ -887,6 +887,17 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   background: #000;
 }
 
+.player-stage iframe,
+.player-stage video,
+.player-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
 .player-iframe,
 .hls-wrap,
 .hls-wrap video {
