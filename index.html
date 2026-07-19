@@ -226,5 +226,49 @@
   </div><!-- /app-shell -->
 
   <script type="module" src="./js/app.js"></script>
+  <!-- Inline login fallback (works even if ES modules fail on iOS) -->
+  <script>
+    (function () {
+      var KEY = "shaib_pwa_auth_v1";
+      function norm(s) {
+        return String(s || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "");
+      }
+      function save() {
+        try {
+          sessionStorage.setItem(KEY, "1");
+        } catch (e) {}
+        try {
+          localStorage.setItem(KEY, "1");
+        } catch (e) {}
+      }
+      function doLogin(e) {
+        if (e) e.preventDefault();
+        var u = norm(document.getElementById("login-user") && document.getElementById("login-user").value);
+        var p = norm(document.getElementById("login-pass") && document.getElementById("login-pass").value);
+        var err = document.getElementById("login-error");
+        if (u === "shaib" && p === "saber") {
+          save();
+          if (err) err.hidden = true;
+          var gate = document.getElementById("login-gate");
+          var shell = document.getElementById("app-shell");
+          if (gate) gate.hidden = true;
+          if (shell) shell.hidden = false;
+          return false;
+        }
+        if (err) {
+          err.textContent = "Incorrect username or password";
+          err.hidden = false;
+        }
+        return false;
+      }
+      var form = document.getElementById("login-form");
+      var btn = document.getElementById("login-submit");
+      if (form) form.addEventListener("submit", doLogin);
+      if (btn) btn.addEventListener("click", doLogin);
+    })();
+  </script>
 </body>
 </html>

@@ -430,19 +430,27 @@ function bind() {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 
-  $("#login-form")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const ok = login($("#login-user").value, $("#login-pass").value);
+  function tryLogin(e) {
+    e?.preventDefault?.();
+    const userEl = $("#login-user");
+    const passEl = $("#login-pass");
     const err = $("#login-error");
+    const ok = login(userEl?.value, passEl?.value);
     if (ok) {
-      err.hidden = true;
-      await ensureFiltersReady();
+      if (err) err.hidden = true;
+      // Show app immediately — never wait on filter downloads
       showApp();
+      ensureFiltersReady().catch(() => {});
       return;
     }
-    err.textContent = t(state.prefs.lang, "loginError");
-    err.hidden = false;
-  });
+    if (err) {
+      err.textContent = t(state.prefs.lang, "loginError");
+      err.hidden = false;
+    }
+  }
+
+  $("#login-form")?.addEventListener("submit", tryLogin);
+  $("#login-submit")?.addEventListener("click", tryLogin);
 
   $("#refresh-btn").addEventListener("click", () => refreshActive(true));
   $("#player-close").addEventListener("click", closePlayer);
