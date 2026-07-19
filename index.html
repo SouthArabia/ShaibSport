@@ -51,21 +51,35 @@
   <!-- Fail-safe: never stay on splash if modules hang (common on iOS Safari) -->
   <script>
     (function () {
+      function loggedIn() {
+        try {
+          if (sessionStorage.getItem("shaib_pwa_auth_v1") === "1") return true;
+        } catch (e) {}
+        try {
+          if (localStorage.getItem("shaib_pwa_auth_v1") === "1") return true;
+        } catch (e) {}
+        return false;
+      }
       function revealLogin() {
+        if (loggedIn()) return; // never cover the app after login
         var gate = document.getElementById("login-gate");
         var shell = document.getElementById("app-shell");
         if (gate && gate.hidden && shell && shell.hidden) {
           gate.hidden = false;
+          gate.style.display = "";
         }
       }
       function hide() {
         var s = document.getElementById("splash");
         if (s) {
           s.classList.add("hide");
+          s.hidden = true;
+          s.style.display = "none";
+          s.style.pointerEvents = "none";
           s.setAttribute("aria-hidden", "true");
-          setTimeout(function () {
-            if (s && s.parentNode) s.parentNode.removeChild(s);
-          }, 500);
+          try {
+            if (s.parentNode) s.parentNode.removeChild(s);
+          } catch (e) {}
         }
         revealLogin();
       }
@@ -284,10 +298,33 @@
         if (u === "saber" && p === "7777") {
           save();
           if (err) err.hidden = true;
+          var splash = document.getElementById("splash");
+          if (splash) {
+            splash.hidden = true;
+            splash.style.display = "none";
+            try {
+              splash.remove();
+            } catch (e) {}
+          }
           var gate = document.getElementById("login-gate");
           var shell = document.getElementById("app-shell");
-          if (gate) gate.hidden = true;
-          if (shell) shell.hidden = false;
+          if (gate) {
+            gate.hidden = true;
+            gate.style.display = "none";
+            gate.style.pointerEvents = "none";
+          }
+          if (shell) {
+            shell.hidden = false;
+            shell.style.display = "";
+            shell.style.pointerEvents = "";
+          }
+          document.getElementById("shaib-global-cosmetic") &&
+            document.getElementById("shaib-global-cosmetic").remove();
+          document.getElementById("shaib-adblock-cosmetic") &&
+            document.getElementById("shaib-adblock-cosmetic").remove();
+          try {
+            window.dispatchEvent(new CustomEvent("shaib-login"));
+          } catch (e) {}
           return false;
         }
         if (err) {

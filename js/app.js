@@ -414,14 +414,38 @@ function paintLogin() {
 }
 
 function showApp() {
-  $("#login-gate").hidden = true;
-  $("#app-shell").hidden = false;
+  hideSplash();
+  const gate = $("#login-gate");
+  const shell = $("#app-shell");
+  if (gate) {
+    gate.hidden = true;
+    gate.style.display = "none";
+    gate.style.pointerEvents = "none";
+  }
+  if (shell) {
+    shell.hidden = false;
+    shell.style.display = "";
+    shell.style.pointerEvents = "";
+  }
+  // Remove any leaked shell cosmetics that could freeze UI
+  document.getElementById("shaib-global-cosmetic")?.remove();
+  document.getElementById("shaib-adblock-cosmetic")?.remove();
+  paintChrome();
   refreshActive(true);
 }
 
 function showLogin() {
-  $("#app-shell").hidden = true;
-  $("#login-gate").hidden = false;
+  const shell = $("#app-shell");
+  const gate = $("#login-gate");
+  if (shell) {
+    shell.hidden = true;
+    shell.style.display = "none";
+  }
+  if (gate) {
+    gate.hidden = false;
+    gate.style.display = "";
+    gate.style.pointerEvents = "";
+  }
   paintLogin();
 }
 
@@ -451,6 +475,10 @@ function bind() {
 
   $("#login-form")?.addEventListener("submit", tryLogin);
   $("#login-submit")?.addEventListener("click", tryLogin);
+  window.addEventListener("shaib-login", () => {
+    showApp();
+    ensureFiltersReady().catch(() => {});
+  });
 
   $("#refresh-btn").addEventListener("click", () => refreshActive(true));
   $("#player-close").addEventListener("click", closePlayer);
@@ -510,10 +538,15 @@ async function registerSW() {
 
 function hideSplash() {
   const splash = document.getElementById("splash");
-  if (!splash || splash.classList.contains("hide")) return;
+  if (!splash) return;
   splash.classList.add("hide");
+  splash.hidden = true;
+  splash.style.display = "none";
+  splash.style.pointerEvents = "none";
   splash.setAttribute("aria-hidden", "true");
-  setTimeout(() => splash.remove(), 450);
+  try {
+    splash.remove();
+  } catch (_) {}
 }
 
 function setFilterProgressUI(p) {

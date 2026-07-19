@@ -1,28 +1,37 @@
 /**
- * App-wide adblock for every tab: network hooks, cosmetic hide,
- * and continuous scrub of third-party iframes / scripts in the shell.
+ * App-shell adblock only — network hooks + tiny safe cosmetics.
+ * Full EasyList cosmetics must NOT be injected here (they freeze/hide the UI).
+ * Full cosmetics belong in player srcdoc shields only.
  */
-import {
-  cosmeticStyleTag,
-  isAdHost,
-  isAdUrl,
-  syncAdblockFromEngine,
-} from "./adblock.js";
+import { isAdHost, isAdUrl, syncAdblockFromEngine } from "./adblock.js";
 import { getFilterStats } from "./filter-engine.js";
+
+/** Safe selectors for OUR app document only */
+const SHELL_COSMETICS = [
+  "ins.adsbygoogle",
+  ".adsbygoogle",
+  "[data-ad]",
+  "[data-ad-slot]",
+  "iframe[src*='googlesyndication']",
+  "iframe[src*='doubleclick']",
+  "iframe[src*='googletagmanager']",
+  "iframe[id*='google_ads']",
+  "#google_ads_frame",
+  ".OUTBRAIN",
+  ".taboola",
+  ".trc_rbox",
+];
 
 let installed = false;
 let scrubTimer = null;
 
-function injectCosmeticCss() {
-  const html = cosmeticStyleTag();
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  const style = tmp.firstElementChild;
-  if (!style) return;
-  style.id = "shaib-global-cosmetic";
+function injectShellCosmeticCss() {
   const prev = document.getElementById("shaib-global-cosmetic");
+  const style = document.createElement("style");
+  style.id = "shaib-global-cosmetic";
+  style.textContent = `${SHELL_COSMETICS.join(",")}{display:none!important;visibility:hidden!important;pointer-events:none!important;height:0!important;width:0!important;overflow:hidden!important}`;
   if (prev) prev.replaceWith(style);
-  else document.documentElement.prepend(style);
+  else document.documentElement.appendChild(style);
 }
 
 function hostnameSafe(url) {
@@ -37,36 +46,20 @@ function neutralizeNode(el) {
   if (!el || el.nodeType !== 1) return;
   try {
     const tag = el.tagName;
+    // Never touch app chrome
+    if (el.closest?.("#app-shell, #login-gate, #player-sheet, .tabbar, .app-header")) {
+      // Still allow killing injected third-party ad scripts under shell
+      if (tag === "SCRIPT" && el.src && isAdUrl(el.src)) el.remove();
+      return;
+    }
     if (tag === "SCRIPT" && el.src && isAdUrl(el.src)) {
       el.remove();
       return;
     }
     if (tag === "IFRAME" || tag === "EMBED" || tag === "OBJECT") {
+      if (el.id === "bracket-frame" || el.classList?.contains("player-iframe")) return;
       const src = el.src || el.getAttribute("data-src") || "";
-      if (!src) return;
-      if (el.id === "bracket-frame" || el.classList.contains("player-iframe")) return;
-      if (isAdUrl(src) || isAdHost(hostnameSafe(src))) {
-        el.remove();
-        return;
-      }
-    }
-    if (tag === "IMG") {
-      const src = el.src || el.getAttribute("data-src") || "";
-      if (src && isAdUrl(src) && /ad|banner|pixel|track/i.test(src)) el.remove();
-    }
-    if (tag === "A") {
-      const href = el.getAttribute("href") || "";
-      if (href && isAdUrl(href)) {
-        el.addEventListener(
-          "click",
-          (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-          },
-          true
-        );
-        el.removeAttribute("href");
-      }
+      if (src && (isAdUrl(src) || isAdHost(hostnameSafe(src)))) el.remove();
     }
   } catch (_) {}
 }
@@ -74,15 +67,8 @@ function neutralizeNode(el) {
 function scrubDom() {
   try {
     document
-      .querySelectorAll(
-        "iframe:not(#bracket-frame):not(.player-iframe), embed, object, script[src], img[src], a[href]"
-      )
+      .querySelectorAll("script[src], iframe:not(#bracket-frame):not(.player-iframe)")
       .forEach(neutralizeNode);
-  } catch (_) {}
-  try {
-    document.querySelectorAll("[data-ad], .adsbygoogle, ins.adsbygoogle").forEach((el) => {
-      el.style.setProperty("display", "none", "important");
-    });
   } catch (_) {}
 }
 
@@ -116,12 +102,6 @@ function installNetworkHooks() {
       return _fetch(input, init);
     };
   } catch (_) {}
-
-  try {
-    window.open = function () {
-      return null;
-    };
-  } catch (_) {}
 }
 
 function installObserver() {
@@ -129,10 +109,7 @@ function installObserver() {
     const mo = new MutationObserver((muts) => {
       for (const m of muts) {
         m.addedNodes.forEach((n) => {
-          if (n.nodeType === 1) {
-            neutralizeNode(n);
-            n.querySelectorAll?.("iframe,script[src],embed,object,img,a").forEach(neutralizeNode);
-          }
+          if (n.nodeType === 1) neutralizeNode(n);
         });
       }
     });
@@ -143,28 +120,15 @@ function installObserver() {
 /** Install once; safe to call again after filters sync. */
 export function installGlobalAdblock() {
   syncAdblockFromEngine();
-  injectCosmeticCss();
+  injectShellCosmeticCss();
   if (!installed) {
     installed = true;
     installNetworkHooks();
     installObserver();
-    document.addEventListener(
-      "click",
-      (e) => {
-        const a = e.target?.closest?.("a,area");
-        if (!a) return;
-        const href = a.getAttribute("href") || "";
-        if (href && isAdUrl(href)) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      },
-      true
-    );
   }
   scrubDom();
   if (scrubTimer) clearInterval(scrubTimer);
-  scrubTimer = setInterval(scrubDom, 1200);
+  scrubTimer = setInterval(scrubDom, 2000);
 
   const stats = getFilterStats();
   try {

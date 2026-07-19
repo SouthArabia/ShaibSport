@@ -60,10 +60,18 @@ body {
   transition: opacity 0.45s ease, visibility 0.45s ease;
 }
 
-.splash.hide {
+.splash.hide,
+.splash[hidden] {
+  display: none !important;
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
+  pointer-events: none !important;
+}
+
+.login-gate[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .splash img {
