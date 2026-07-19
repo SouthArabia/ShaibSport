@@ -343,6 +343,56 @@ function setTheme(theme) {
   document.documentElement.dataset.theme = theme === "royale" ? "royale" : "classic";
 }
 
+function isStandaloneApp() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function isIosDevice() {
+  const ua = navigator.userAgent || "";
+  if (/iPad|iPhone|iPod/i.test(ua)) return true;
+  // iPadOS desktop UA
+  return navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1;
+}
+
+function canOfferInstall() {
+  if (isStandaloneApp()) return false;
+  return !!(state.deferredInstall || isIosDevice());
+}
+
+function openInstallGuide() {
+  const lang = state.prefs.lang;
+  const sheet = $("#install-sheet");
+  if (!sheet) return;
+  $("#install-sheet-title").textContent = t(lang, "installSheetTitle");
+  $("#install-sheet-hint").textContent = t(lang, "installSheetHint");
+  $("#install-sheet-steps").innerHTML = [1, 2, 3]
+    .map((n) => `<li>${t(lang, `installIosStep${n}`)}</li>`)
+    .join("");
+  $("#install-sheet-close").textContent = t(lang, "gotIt");
+  sheet.hidden = false;
+}
+
+function closeInstallGuide() {
+  const sheet = $("#install-sheet");
+  if (sheet) sheet.hidden = true;
+}
+
+async function offerInstall() {
+  if (state.deferredInstall) {
+    try {
+      state.deferredInstall.prompt();
+      await state.deferredInstall.userChoice;
+    } catch (_) {}
+    state.deferredInstall = null;
+    paintChrome();
+    return;
+  }
+  openInstallGuide();
+}
+
 function paintChrome() {
   const lang = state.prefs.lang;
   applyDir(lang);
@@ -385,13 +435,33 @@ function paintChrome() {
   $("#theme-classic").classList.toggle("active", state.prefs.theme === "classic");
   $("#theme-royale").classList.toggle("active", state.prefs.theme === "royale");
 
-  const banner = $("#install-banner");
+  const standalone = isStandaloneApp();
+  const ios = isIosDevice();
   const dismissed = sessionStorage.getItem("shaib_install_dismissed");
-  banner.hidden = !(state.deferredInstall && !dismissed);
+  const showBanner = !standalone && !dismissed && (state.deferredInstall || ios);
+
+  const banner = $("#install-banner");
+  if (banner) banner.hidden = !showBanner;
   $("#install-title").textContent = t(lang, "installTitle");
-  $("#install-body").textContent = t(lang, "installBody");
-  $("#install-btn").textContent = t(lang, "installBtn");
+  $("#install-body").textContent = ios ? t(lang, "installBodyIos") : t(lang, "installBody");
+  $("#install-btn").textContent = state.deferredInstall
+    ? t(lang, "installBtn")
+    : t(lang, "installBtnHow");
   $("#install-dismiss").textContent = t(lang, "dismiss");
+
+  const installCard = $("#install-settings-card");
+  if (installCard) installCard.hidden = standalone;
+  if ($("#lbl-install")) $("#lbl-install").textContent = t(lang, "installSettings");
+  if ($("#install-settings-sub")) {
+    $("#install-settings-sub").textContent = standalone
+      ? t(lang, "installDone")
+      : t(lang, "installSettingsSub");
+  }
+  if ($("#btn-install-settings")) {
+    $("#btn-install-settings").textContent = ios && !state.deferredInstall
+      ? t(lang, "installBtnHow")
+      : t(lang, "installBtn");
+  }
 }
 
 async function loadMatches(force) {
@@ -831,18 +901,21 @@ function bind() {
     state.deferredInstall = e;
     paintChrome();
   });
-
-  $("#install-btn")?.addEventListener("click", async () => {
-    if (!state.deferredInstall) return;
-    state.deferredInstall.prompt();
-    await state.deferredInstall.userChoice;
+  window.addEventListener("appinstalled", () => {
     state.deferredInstall = null;
+    sessionStorage.setItem("shaib_install_dismissed", "1");
+    closeInstallGuide();
     paintChrome();
   });
+
+  $("#install-btn")?.addEventListener("click", () => offerInstall());
+  $("#btn-install-settings")?.addEventListener("click", () => offerInstall());
   $("#install-dismiss")?.addEventListener("click", () => {
     sessionStorage.setItem("shaib_install_dismissed", "1");
     paintChrome();
   });
+  $("#install-sheet-close")?.addEventListener("click", closeInstallGuide);
+  $("#install-sheet-backdrop")?.addEventListener("click", closeInstallGuide);
 
   $("#btn-logout")?.addEventListener("click", () => {
     logout();
@@ -854,7 +927,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=37"),
+      navigator.serviceWorker.register("./sw.js?v=38"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

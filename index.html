@@ -11,7 +11,9 @@
   <!-- strict-origin-when-cross-origin: stream players reject no-referrer ("إخفاء المصدر") -->
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Shaib Sport" />
   <meta name="description" content="" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
@@ -131,12 +133,22 @@
 
   <div class="install-banner" id="install-banner" hidden>
     <div>
-      <p id="install-title"><strong>Install</strong></p>
-      <p id="install-body"></p>
+      <p id="install-title"><strong>ثبّت التطبيق</strong></p>
+      <p id="install-body">أضفه للشاشة الرئيسية على آيفون من زر المشاركة.</p>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0">
-      <button class="btn" id="install-btn" type="button">Install</button>
-      <button class="btn ghost" id="install-dismiss" type="button">Later</button>
+      <button class="btn" id="install-btn" type="button">كيف؟</button>
+      <button class="btn ghost" id="install-dismiss" type="button">لاحقاً</button>
+    </div>
+  </div>
+
+  <div class="install-sheet" id="install-sheet" hidden>
+    <div class="install-sheet-backdrop" id="install-sheet-backdrop"></div>
+    <div class="install-sheet-card" role="dialog" aria-modal="true" aria-labelledby="install-sheet-title">
+      <h2 id="install-sheet-title">تثبيت على آيفون</h2>
+      <p id="install-sheet-hint" class="install-sheet-hint"></p>
+      <ol id="install-sheet-steps" class="install-sheet-steps"></ol>
+      <button class="btn" id="install-sheet-close" type="button">حسناً</button>
     </div>
   </div>
 
@@ -210,6 +222,16 @@
       </div>
     </div>
 
+    <div class="settings-card" id="install-settings-card">
+      <div class="settings-row install-settings-row">
+        <div>
+          <label id="lbl-install">ثبّت التطبيق</label>
+          <small id="install-settings-sub">أضفه إلى الشاشة الرئيسية على آيفون</small>
+        </div>
+        <button class="btn" type="button" id="btn-install-settings">تثبيت</button>
+      </div>
+    </div>
+
     <div class="settings-card">
       <div class="settings-row">
         <div>
@@ -276,7 +298,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=37";
+      var SW_URL = "./sw.js?v=38";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -294,7 +316,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=37"></script>
+  <script type="module" src="./js/app.js?v=38"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)

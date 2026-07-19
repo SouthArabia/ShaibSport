@@ -1004,7 +1004,75 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   gap: 10px;
 }
 
+.install-banner[hidden] { display: none !important; }
+
 .install-banner p { margin: 0; font-size: 0.88rem; }
+
+.install-settings-row {
+  align-items: center;
+  gap: 12px;
+}
+
+.install-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.install-sheet[hidden] { display: none !important; }
+
+.install-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.install-sheet-card {
+  position: relative;
+  width: min(440px, 100%);
+  border-radius: 18px 18px 14px 14px;
+  border: 1px solid var(--line);
+  background: var(--panel, #14141a);
+  padding: 18px 16px 16px;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+}
+
+.install-sheet-card h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.install-sheet-hint {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.install-sheet-steps {
+  margin: 0 0 16px;
+  padding-inline-start: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.install-sheet-steps li::marker {
+  color: var(--gold, #d4af37);
+  font-weight: 700;
+}
+
+.install-sheet-card .btn {
+  width: 100%;
+}
 
 @media (min-width: 800px) {
   .knockout-grid { grid-template-columns: repeat(3, 1fr); }
