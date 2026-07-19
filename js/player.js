@@ -59,7 +59,7 @@ async function fetchHtml(url) {
 
 function isDirectPlayerUrl(url = "") {
   // worldchampion (ch3) is treated as a site tile: EasyList + no popups/redirects
-  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer/i.test(
+  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|kore10/i.test(
     url
   );
 }
@@ -366,13 +366,16 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Channel 1 (kora-sami): direct embed — SW proxy 404s on mobile before SW controls
-      if (/kora-sami|splplayer/i.test(url)) {
+      // Ch1 / ch2: direct embed — SW proxy 404s on mobile before SW controls
+      if (/kora-sami|splplayer|kore10/i.test(url)) {
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );
         currentIframe = frame;
-        return { frame, mode: "direct-ch1" };
+        return {
+          frame,
+          mode: /kore10/i.test(url) ? "direct-ch2" : "direct-ch1",
+        };
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(

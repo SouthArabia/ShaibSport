@@ -163,6 +163,7 @@ export const MEDIA_ALLOWLIST = [
   "albaplayer",
   "kora-sami.com",
   "splplayer",
+  "kore10.blog",
   "worldchampion.fun",
   "streamhostingcdn.top",
   "sportspass.site",
