@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v33";
+const CACHE = "shaib-sport-pwa-v34";
 const ASSETS = [
   "./",
   "./index.html",

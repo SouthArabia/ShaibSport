@@ -153,8 +153,58 @@ const dict = {
   },
 };
 
+/** IPTV.org category titles → Arabic labels (keys stay English for matching). */
+const IPTV_GROUPS_AR = {
+  Sports: "رياضة",
+  News: "أخبار",
+  Entertainment: "ترفيه",
+  Movies: "أفلام",
+  Music: "موسيقى",
+  Kids: "أطفال",
+  Documentary: "وثائقي",
+  General: "عام",
+  Religious: "ديني",
+  Cooking: "طبخ",
+  Education: "تعليم",
+  Lifestyle: "نمط حياة",
+  Business: "أعمال",
+  Culture: "ثقافة",
+  Weather: "طقس",
+  Travel: "سفر",
+  Outdoor: "هواء طلق",
+  Comedy: "كوميديا",
+  Family: "عائلة",
+  Shop: "تسوق",
+  Auto: "سيارات",
+  Classic: "كلاسيك",
+  Science: "علوم",
+  Animation: "رسوم متحركة",
+  Series: "مسلسلات",
+  Legislative: "تشريعي",
+  Relax: "استرخاء",
+  Undefined: "أخرى",
+  Other: "أخرى",
+  XXX: "للكبار",
+};
+
 export function t(lang, key) {
   return (dict[lang] && dict[lang][key]) || dict.en[key] || key;
+}
+
+export function iptvGroupLabel(lang, name) {
+  const key = String(name || "").trim();
+  if (!key) return key;
+  if (lang === "ar") return IPTV_GROUPS_AR[key] || key;
+  return key;
+}
+
+/** Match search against English group name and Arabic label. */
+export function iptvGroupMatchesQuery(lang, groupName, query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  const en = String(groupName || "").toLowerCase();
+  const ar = iptvGroupLabel("ar", groupName).toLowerCase();
+  return en.includes(q) || ar.includes(q);
 }
 
 export function applyDir(lang) {

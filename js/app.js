@@ -1,5 +1,5 @@
 import { store } from "./store.js";
-import { t, applyDir } from "./i18n.js";
+import { t, applyDir, iptvGroupLabel, iptvGroupMatchesQuery } from "./i18n.js";
 import {
   fetchTodayBoard,
   fetchInternationalBoard,
@@ -465,10 +465,11 @@ function renderKnockout(el, data, lang) {
 }
 
 function iptvTileHtml(tile) {
+  const lang = state.prefs.lang;
   const logo = tile.logo
     ? `<img class="tile-logo" src="${tile.logo}" alt="" loading="lazy" onerror="this.style.display='none'" />`
     : icons[tile.icon] || icons.tv;
-  const badge = tile.live ? `<span class="live-pill">مباشر</span>` : "";
+  const badge = tile.live ? `<span class="live-pill">${t(lang, "live")}</span>` : "";
   return `
     <button type="button" class="tile ${tile.emphasized ? "emphasized" : ""}" data-iptv-id="${tile.id}">
       <div class="tile-top">
@@ -502,10 +503,16 @@ function renderIptv() {
     const allMode = state.iptv.group === "__all__";
     const group = allMode ? null : data.groups.find((g) => g.name === state.iptv.group);
     let list = allMode ? data.channels || [] : group?.channels || [];
-    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || c.group.toLowerCase().includes(q));
+    if (q) {
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          iptvGroupMatchesQuery(lang, c.group, q)
+      );
+    }
     const page = state.iptv.page;
     const slice = list.slice(0, (page + 1) * IPTV_PAGE_SIZE);
-    const heading = allMode ? t(lang, "iptvAll") : state.iptv.group;
+    const heading = allMode ? t(lang, "iptvAll") : iptvGroupLabel(lang, state.iptv.group);
     html += `
       <div class="iptv-back-row">
         <button type="button" class="btn ghost" id="iptv-back">‹ ${t(lang, "iptvBack")}</button>
@@ -518,7 +525,7 @@ function renderIptv() {
             iptvTileHtml({
               id: `ch:${ch.url}`,
               title: ch.name,
-              subtitle: ch.group,
+              subtitle: iptvGroupLabel(lang, ch.group),
               logo: ch.logo,
               icon: "tv",
               live: true,
@@ -534,12 +541,14 @@ function renderIptv() {
     let groups = data.groups;
     if (q) {
       groups = groups
-        .map((g) => ({
-          ...g,
-          channels: g.channels.filter((c) => c.name.toLowerCase().includes(q)),
-          count: g.channels.filter((c) => c.name.toLowerCase().includes(q)).length,
-        }))
-        .filter((g) => g.count > 0);
+        .map((g) => {
+          const nameHit = iptvGroupMatchesQuery(lang, g.name, q);
+          const channels = g.channels.filter(
+            (c) => c.name.toLowerCase().includes(q) || nameHit
+          );
+          return { ...g, channels, count: channels.length };
+        })
+        .filter((g) => g.count > 0 || iptvGroupMatchesQuery(lang, g.name, q));
     }
     const total = data.channels?.length || 0;
     html += `
@@ -558,7 +567,7 @@ function renderIptv() {
           .map((g) =>
             iptvTileHtml({
               id: `grp:${g.name}`,
-              title: g.name,
+              title: iptvGroupLabel(lang, g.name),
               subtitle: `${g.count} ${t(lang, "iptvChannels")}`,
               icon: /sport/i.test(g.name) ? "bolt" : "tv",
               emphasized: /sport/i.test(g.name),
@@ -804,7 +813,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=33"),
+      navigator.serviceWorker.register("./sw.js?v=34"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
