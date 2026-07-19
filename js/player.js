@@ -436,17 +436,16 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // Ch1 (kore10): direct AlbaPlayer embed
-      if (/kore10/i.test(url)) {
+      // Ch1 (kora-sami) + Ch2 (kore10): direct embed — reliable on mobile
+      if (/kora-sami|splplayer|kore10/i.test(url)) {
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );
         currentIframe = frame;
-        return { frame, mode: "direct-ch1" };
-      }
-      // Ch2 (kora-sami): SW proxy + inject; direct fallback if proxy flaky
-      if (/kora-sami|splplayer/i.test(url)) {
-        return mountProxiedWithDirectFallback(url);
+        return {
+          frame,
+          mode: /kore10/i.test(url) ? "direct-ch2" : "direct-ch1",
+        };
       }
       // Other stream hosts: SW proxy (ads/autoplay inject). No sandbox — players detect it.
       const frame = configureFrame(

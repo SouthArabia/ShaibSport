@@ -36,8 +36,8 @@ function isChannel3(item) {
   );
 }
 
-const CHANNEL1_URL = "https://k2.kore10.blog/albaplayer/p-1/?serv=1";
-const CHANNEL2_URL = "https://m4.kora-sami.com/splplayer/bmax1/";
+const CHANNEL1_URL = "https://m4.kora-sami.com/splplayer/bmax1/";
+const CHANNEL2_URL = "https://k2.kore10.blog/albaplayer/p-1/?serv=1";
 const CHANNEL3_URL = "https://worldchampion.fun/welcome-4/";
 
 /** Keep frozen / channel-6 tiles on the canvas even when disabled. */
