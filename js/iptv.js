@@ -13,6 +13,29 @@ const GROUP_PRIORITY = [
   "General",
 ];
 
+/** Search terms that mean "show me MENA/Arabic channels" even when they don't
+ * match any channel or group name directly. */
+const MENA_QUERY_TERMS = [
+  "mena",
+  "middle east",
+  "middleeast",
+  "gulf",
+  "arab",
+  "arabic",
+  "الشرق الأوسط",
+  "الشرق الاوسط",
+  "عربي",
+  "عربية",
+  "عرب",
+  "خليج",
+];
+
+export function isMenaQuery(query) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return false;
+  return MENA_QUERY_TERMS.some((term) => q.includes(term.toLowerCase()));
+}
+
 /** ISO country codes used in iptv-org tvg-id (e.g. AlJazeera.qa@SD) */
 export const MENA_COUNTRY_CODES = new Set([
   "sa",
