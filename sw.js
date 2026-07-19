@@ -1,7 +1,8 @@
 /* Shaib Sport PWA — standalone service worker (app shell + ad blocking) */
 importScripts("./js/adblock-sw-hosts.js");
+importScripts("./js/bot-guard.js");
 
-const CACHE = "shaib-sport-pwa-v13";
+const CACHE = "shaib-sport-pwa-v14";
 const ASSETS = [
   "./",
   "./index.html",
@@ -22,6 +23,7 @@ const ASSETS = [
   "./js/filter-lists.js",
   "./js/filter-engine.js",
   "./js/global-adblock.js",
+  "./js/bot-guard.js",
   "./js/stream-detect.js",
   "./js/player.js",
   "./js/app.js",
@@ -42,11 +44,28 @@ const ASSETS = [
 function withNoIndex(response) {
   if (!response) return response;
   const headers = new Headers(response.headers);
-  headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  headers.set(
+    "X-Robots-Tag",
+    "noindex, nofollow, noarchive, nosnippet, noimageindex, nocache"
+  );
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Referrer-Policy", "no-referrer");
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers,
+  });
+}
+
+function botForbidden() {
+  return new Response("Forbidden", {
+    status: 403,
+    statusText: "Forbidden",
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "Cache-Control": "no-store",
+    },
   });
 }
 
@@ -163,6 +182,12 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const ua = request.headers.get("user-agent") || "";
+  if (typeof self.SHAIB_IS_BOT === "function" && self.SHAIB_IS_BOT(ua)) {
+    event.respondWith(botForbidden());
+    return;
+  }
+
   if (request.method !== "GET" && request.method !== "HEAD") return;
 
   if (isAdRequest(request.url)) {
@@ -232,11 +257,11 @@ self.addEventListener("fetch", (event) => {
             const copy = res.clone();
             caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
-          return isNavigate ? withNoIndex(res) : res;
+          return withNoIndex(res);
         })
-        .catch(() => (isNavigate && cached ? withNoIndex(cached) : cached));
+        .catch(() => (cached ? withNoIndex(cached) : cached));
       const hit = cached || fetched;
-      return isNavigate && cached ? withNoIndex(cached) : hit;
+      return cached ? withNoIndex(cached) : hit;
     })
   );
 });

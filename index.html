@@ -4,12 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0B0B0F" />
-  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
-  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache, notranslate" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache" />
+  <meta name="googlebot-news" content="noindex, nofollow" />
   <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="slurp" content="noindex, nofollow" />
+  <meta name="duckduckbot" content="noindex, nofollow" />
+  <meta name="baiduspider" content="noindex, nofollow" />
+  <meta name="yandex" content="noindex, nofollow" />
+  <meta name="chatgpt" content="noindex, nofollow" />
+  <meta name="gptbot" content="noindex, nofollow" />
+  <meta name="ccbot" content="noindex, nofollow" />
+  <meta name="anthropic-ai" content="noindex, nofollow" />
+  <meta name="claudebot" content="noindex, nofollow" />
+  <meta name="Applebot-Extended" content="noindex, nofollow" />
+  <meta name="Google-Extended" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="Private Shaib Sport web app" />
+  <meta name="description" content="" />
+  <!-- Block crawlers / scrapers before anything else loads -->
+  <script>
+    (function () {
+      var ua = navigator.userAgent || "";
+      var bot =
+        /bot|crawl|spider|slurp|scrap(e|er|ing)|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterest|applebot|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|chatgpt|ccbot|anthropic|claudebot|google-extended|amazonbot|perplexity|yandex|baidu|sogou|duckduck|bingpreview|adsbot|mediapartners|ia_archiver|httrack|wget|curl\/|python-requests|headless|phantom|selenium|puppeteer|playwright|lighthouse/i.test(
+          ua
+        );
+      var browser =
+        /mozilla\/|applewebkit|chrome\/|safari\/|firefox\/|edg\/|mobile|android|iphone|ipad/i.test(ua);
+      if (bot || !browser || !ua) {
+        try {
+          document.documentElement.innerHTML =
+            "<head><meta name=robots content=noindex,nofollow><title>403</title></head><body>Forbidden</body>";
+        } catch (e) {}
+        throw new Error("bot-blocked");
+      }
+    })();
+  </script>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" />

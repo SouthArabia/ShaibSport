@@ -1,7 +1,7 @@
 {
   "name": "Shaib Sport",
   "short_name": "ShaibSport",
-  "description": "Football companion for Shaib youth teams — matches, today fixtures, and international bracket.",
+  "description": "",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
