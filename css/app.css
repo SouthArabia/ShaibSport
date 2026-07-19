@@ -13,7 +13,7 @@
   --danger: #ff6b6b;
   --shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
   --radius: 18px;
-  --tab-h: 72px;
+  --tab-h: 84px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font-display: "SF Pro Display", "Segoe UI", system-ui, sans-serif;
   --font-body: "SF Arabic", "Segoe UI", "Tahoma", "Arial", system-ui, sans-serif;
@@ -988,6 +988,98 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
 .tabbar button.active {
   color: var(--gold);
   background: var(--accent-soft);
+}
+
+/* Watch / شاهد الان — primary raised tab */
+.tabbar button.tab-watch,
+.tabbar button[data-tab="matches"] {
+  transform: translateY(-14px);
+  min-width: 0;
+  padding: 10px 6px 8px;
+  border-radius: 18px;
+  color: #1a1400;
+  background: linear-gradient(160deg, #f0d060 0%, #d4af37 48%, #b8922a 100%);
+  border: 1px solid rgba(255, 236, 170, 0.55);
+  box-shadow:
+    0 8px 22px rgba(212, 175, 55, 0.38),
+    0 0 0 3px rgba(212, 175, 55, 0.12);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  z-index: 2;
+}
+
+.tabbar button.tab-watch svg,
+.tabbar button[data-tab="matches"] svg {
+  width: 26px;
+  height: 26px;
+  stroke: none;
+  fill: currentColor;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25));
+}
+
+.tabbar button.tab-watch .tab-watch-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 214, 90, 0.45);
+  pointer-events: none;
+  animation: watch-ring 2.2s ease-in-out infinite;
+}
+
+.tabbar button.tab-watch::after,
+.tabbar button[data-tab="matches"]::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 14%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b30;
+  box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55);
+  animation: watch-pulse 1.5s ease-out infinite;
+}
+
+.tabbar button.tab-watch.active,
+.tabbar button[data-tab="matches"].active {
+  color: #140f00;
+  background: linear-gradient(160deg, #ffe08a 0%, #e0bc3a 45%, #c9a227 100%);
+  box-shadow:
+    0 10px 26px rgba(212, 175, 55, 0.48),
+    0 0 0 4px rgba(212, 175, 55, 0.18);
+}
+
+.tabbar button.tab-watch:active,
+.tabbar button[data-tab="matches"]:active {
+  transform: translateY(-11px) scale(0.97);
+}
+
+[data-theme="royale"] .tabbar button.tab-watch,
+[data-theme="royale"] .tabbar button[data-tab="matches"] {
+  color: #fff5f5;
+  background: linear-gradient(160deg, #ff6b6b 0%, #d42b2b 50%, #9e1a1a 100%);
+  border-color: rgba(255, 160, 160, 0.45);
+  box-shadow:
+    0 8px 22px rgba(212, 43, 43, 0.42),
+    0 0 0 3px rgba(212, 43, 43, 0.16);
+}
+
+[data-theme="royale"] .tabbar button.tab-watch.active,
+[data-theme="royale"] .tabbar button[data-tab="matches"].active {
+  color: #fff;
+  background: linear-gradient(160deg, #ff8a8a 0%, #e03535 45%, #b01f1f 100%);
+}
+
+@keyframes watch-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 59, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
+
+@keyframes watch-ring {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
 }
 
 .install-banner {
