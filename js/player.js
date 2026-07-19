@@ -54,7 +54,7 @@ async function fetchHtml(url) {
 }
 
 function isDirectPlayerUrl(url = "") {
-  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer/i.test(
+  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|worldchampion/i.test(
     url
   );
 }
@@ -346,8 +346,8 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
-      // kora-sami / clappr players: direct embed (proxy breaks stream referer)
-      if (/kora-sami|splplayer/i.test(url)) {
+      // Direct embed for hosts that need their own origin/referer for HLS
+      if (/kora-sami|splplayer|worldchampion/i.test(url)) {
         const frame = configureFrame(
           mountLockedIframe(url, { sandbox: false })
         );

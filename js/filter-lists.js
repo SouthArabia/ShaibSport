@@ -163,6 +163,7 @@ export const MEDIA_ALLOWLIST = [
   "albaplayer",
   "kora-sami.com",
   "splplayer",
+  "worldchampion.fun",
   "majed-koora.com",
   "jwplayer.com",
   "jwplatform.com",

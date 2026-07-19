@@ -20,7 +20,16 @@ function isChannel1(item) {
   );
 }
 
+function isChannel3(item) {
+  return (
+    String(item?.id || "") === "browser-3" ||
+    /قناة\s*3\b/.test(String(item?.title || "")) ||
+    String(item?.id || "") === "ch3"
+  );
+}
+
 const CHANNEL1_URL = "https://m4.kora-sami.com/splplayer/bmax1/";
+const CHANNEL3_URL = "https://worldchampion.fun/welcome-4/";
 
 /** Keep frozen / channel-6 tiles on the canvas even when disabled. */
 function includeTile(item) {
@@ -34,7 +43,9 @@ function isFox(p) {
 }
 
 function isSyria(url = "") {
-  return /syria-player|shootsync|beinmax|kora-sami|splplayer/i.test(url);
+  return /syria-player|shootsync|beinmax|kora-sami|splplayer|worldchampion/i.test(
+    url
+  );
 }
 
 const LIVE_PIN_ORDER = [
@@ -74,7 +85,9 @@ export function buildCanvasModel(cfg = {}) {
         ? ""
         : isChannel1(p)
           ? CHANNEL1_URL
-          : p.url;
+          : isChannel3(p)
+            ? CHANNEL3_URL
+            : p.url;
       const syria = !frozen && isSyria(url);
       const yt = /youtube\.com|youtu\.be/i.test(url || "");
       return {

@@ -1,7 +1,7 @@
 /* Service-worker helper: fetch stream player HTML, unwrap document.write, strip ads */
 (function (global) {
   const PLAYER_HOST_OK =
-    /syria-player|shootsync|albaplayer|beinmax|thehlive|kora-sami|splplayer/i;
+    /syria-player|shootsync|albaplayer|beinmax|thehlive|kora-sami|splplayer|worldchampion/i;
 
   const AD_SRC_RE =
     /acscdn\.com|aclib\.js|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|mgid|revcontent|adservice|adsystem|popunder|clickunder|ad-delivery|adserver|\/ads\/|adsbygoogle|histats|statcounter|yandex\.ru\/ads|mc\.yandex/i;
@@ -23,7 +23,7 @@
   }
 
   function isPlayerAssetUrl(u) {
-    return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|googleapis|gstatic/i.test(
+    return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|worldchampion|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|googleapis|gstatic/i.test(
       String(u || "")
     );
   }
@@ -76,7 +76,7 @@
     return `<script id="shaib-easylist-runtime">
 (function(){
   if(window.__shaibEasyListRuntime)return;window.__shaibEasyListRuntime=true;
-  var allow=/syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|googleapis|gstatic|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|s3\\.|m3u8/i;
+  var allow=/syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|worldchampion|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|googleapis|gstatic|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|s3\\.|m3u8/i;
   var adRe=/acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|adservice|adsystem|\\/pagead\\/|adsbygoogle|popunder|clickunder/i;
   function bad(u){
     u=String(u||'');

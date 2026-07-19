@@ -13,6 +13,7 @@ const ALLOW_HOST_PARTS = [
   "albaplayer",
   "kora-sami",
   "splplayer",
+  "worldchampion",
   "alarabiya",
   "aljazeera",
   "thehlive",

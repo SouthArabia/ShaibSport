@@ -106,7 +106,7 @@
     {
       "id": "browser-3",
       "title": "قناة 3",
-      "url": "https://player.syria-player.live/albaplayer/beinmax1/?serv=3",
+      "url": "https://worldchampion.fun/welcome-4/",
       "enabled": true
     },
     {
@@ -561,8 +561,8 @@
   },
   "channel1_url": "https://m4.kora-sami.com/splplayer/bmax1/",
   "channel2_url": "https://player.syria-player.live/albaplayer/beinmax1/?serv=2",
-  "channel3_url": "",
-  "ch3_enabled": false,
+  "channel3_url": "https://worldchampion.fun/welcome-4/",
+  "ch3_enabled": true,
   "ch3_title_ar": "قناة 3",
   "ch3_title_en": "CH 3",
   "ch3_url": "https://we.shootsync.site/albaplayer/sniaer/?serv=0",
