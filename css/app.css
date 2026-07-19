@@ -730,6 +730,14 @@ html[dir="rtl"] .team.home { text-align: end; align-items: end; }
   color: var(--gold);
 }
 
+.player-bar .player-nav[hidden] {
+  display: none !important;
+}
+
+.player-bar .player-nav:disabled {
+  opacity: 0.35;
+}
+
 .player-body {
   flex: 1;
   min-height: 0;

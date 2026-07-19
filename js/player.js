@@ -126,6 +126,27 @@ export function createPlayerController(opts) {
   const { body, titleEl, destroyHls, setHls, t } = opts;
   let streamListener = null;
   let currentIframe = null;
+  /** @type {{ items: { kind: string, title: string, url: string }[], index: number } | null} */
+  let playlist = null;
+
+  const prevBtn = () => document.getElementById("player-prev");
+  const nextBtn = () => document.getElementById("player-next");
+
+  function updatePlaylistNav() {
+    const has = !!(playlist && playlist.items && playlist.items.length > 1);
+    const prev = prevBtn();
+    const next = nextBtn();
+    if (prev) {
+      prev.hidden = !has;
+      prev.disabled = !has;
+      prev.title = t("playerPrev") || "Previous";
+    }
+    if (next) {
+      next.hidden = !has;
+      next.disabled = !has;
+      next.title = t("playerNext") || "Next";
+    }
+  }
 
   function clear() {
     destroyHls();
@@ -141,14 +162,43 @@ export function createPlayerController(opts) {
     titleEl.textContent = title;
     clear();
     const wrap = document.createElement("div");
-    wrap.className = "hls-wrap";
+    wrap.className = "player-stack";
+    const tools = document.createElement("div");
+    tools.className = "player-tools";
+    if (playlist && playlist.items.length > 1) {
+      const idx = playlist.index + 1;
+      const total = playlist.items.length;
+      const status = document.createElement("div");
+      status.className = "player-status";
+      status.textContent = `${idx} / ${total}`;
+      wrap.appendChild(status);
+
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "player-tool-btn";
+      prev.textContent = `‹ ${t("playerPrev") || "Prev"}`;
+      prev.addEventListener("click", () => goPlaylist(-1));
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "player-tool-btn";
+      next.textContent = `${t("playerNext") || "Next"} ›`;
+      next.addEventListener("click", () => goPlaylist(1));
+      tools.appendChild(prev);
+      tools.appendChild(next);
+      wrap.appendChild(tools);
+    }
+
+    const stage = document.createElement("div");
+    stage.className = "player-stage";
     const video = document.createElement("video");
     video.controls = true;
     video.playsInline = true;
     video.autoplay = true;
     video.setAttribute("playsinline", "");
-    wrap.appendChild(video);
+    stage.appendChild(video);
+    wrap.appendChild(stage);
     body.appendChild(wrap);
+    updatePlaylistNav();
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
@@ -163,6 +213,20 @@ export function createPlayerController(opts) {
       return;
     }
     video.src = url;
+  }
+
+  function goPlaylist(delta) {
+    if (!playlist?.items?.length) return;
+    const n = playlist.items.length;
+    playlist.index = (playlist.index + delta + n) % n;
+    const item = playlist.items[playlist.index];
+    if (!item) return;
+    openLive({
+      kind: "live",
+      title: item.title,
+      url: item.url,
+      keepPlaylist: true,
+    });
   }
 
   async function mountShielded(url, injectExtra = "") {
@@ -444,6 +508,16 @@ export function createPlayerController(opts) {
 
   async function openTile(tile) {
     titleEl.textContent = tile.title;
+    if (Array.isArray(tile.playlist) && tile.playlist.length) {
+      playlist = {
+        items: tile.playlist,
+        index: Math.max(0, Math.min(tile.playlistIndex ?? 0, tile.playlist.length - 1)),
+      };
+    } else if (!tile.keepPlaylist) {
+      playlist = null;
+    }
+    updatePlaylistNav();
+
     // Kick filter refresh in background — never gate the player on it
     if (tile.kind !== "live") ensurePlayerFilters();
     switch (tile.kind) {
@@ -462,5 +536,11 @@ export function createPlayerController(opts) {
     }
   }
 
-  return { openTile, playHls, clear, mountLockedIframe };
+  function bindPlaylistButtons() {
+    prevBtn()?.addEventListener("click", () => goPlaylist(-1));
+    nextBtn()?.addEventListener("click", () => goPlaylist(1));
+  }
+  bindPlaylistButtons();
+
+  return { openTile, playHls, clear, mountLockedIframe, goPlaylist, updatePlaylistNav };
 }

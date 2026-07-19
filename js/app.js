@@ -323,6 +323,10 @@ function closePlayer() {
     $("#player-body").innerHTML = "";
   }
   $("#player-sheet").hidden = true;
+  const prev = $("#player-prev");
+  const next = $("#player-next");
+  if (prev) prev.hidden = true;
+  if (next) next.hidden = true;
 }
 
 function setTheme(theme) {
@@ -605,14 +609,24 @@ function renderIptv() {
       }
       if (id.startsWith("ch:")) {
         const url = id.slice(3);
-        const ch =
-          (data.channels || []).find((c) => c.url === url) ||
-          data.groups.find((g) => g.name === state.iptv.group)?.channels.find((c) => c.url === url);
+        const allMode = state.iptv.group === "__all__";
+        const list = allMode
+          ? data.channels || []
+          : data.groups.find((g) => g.name === state.iptv.group)?.channels || [];
+        const index = list.findIndex((c) => c.url === url);
+        const ch = index >= 0 ? list[index] : list.find((c) => c.url === url);
+        const playlist = list.map((c) => ({
+          kind: "live",
+          title: c.name,
+          url: c.url,
+        }));
         openPlayer({
           kind: "live",
           id: url,
           title: ch?.name || t(lang, "iptv"),
           url,
+          playlist,
+          playlistIndex: Math.max(0, index),
         });
       }
     });
@@ -790,7 +804,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=31"),
+      navigator.serviceWorker.register("./sw.js?v=32"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
