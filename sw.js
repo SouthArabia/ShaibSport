@@ -1,7 +1,7 @@
 /* Shaib Sport PWA — standalone service worker (app shell + ad blocking) */
 importScripts("./js/adblock-sw-hosts.js");
 
-const CACHE = "shaib-sport-pwa-v10";
+const CACHE = "shaib-sport-pwa-v11";
 const ASSETS = [
   "./",
   "./index.html",

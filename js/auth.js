@@ -1,7 +1,7 @@
 /** PWA-only session gate (client-side). Not shared with any native app. */
 const AUTH_KEY = "shaib_pwa_auth_v1";
-const USER = "الشعيب";
-const PASS = "صبر";
+const USER = "Shaib";
+const PASS = "Saber";
 
 export function isLoggedIn() {
   try {
