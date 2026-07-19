@@ -83,6 +83,40 @@ iframe[src*="ad"],iframe[src*="banner"],iframe[src*="pop"],iframe[id*="ad"],ifra
   setInterval(scrub,800);
   try{new MutationObserver(scrub).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
 })();
+</script>
+<script id="shaib-player-autoplay">
+(function(){
+  if(window.__shaibPlayerAutoPlay)return;window.__shaibPlayerAutoPlay=true;
+  var tries=0;
+  function kick(){
+    tries++;
+    try{
+      document.querySelectorAll('video,audio').forEach(function(v){
+        try{
+          v.setAttribute('playsinline','');
+          v.setAttribute('webkit-playsinline','');
+          v.setAttribute('autoplay','');
+          v.playsInline=true;
+          var p=v.play();
+          if(p&&p.catch)p.catch(function(){
+            v.muted=true;v.defaultMuted=true;
+            v.play().then(function(){setTimeout(function(){try{v.muted=false;}catch(e){}},400);}).catch(function(){});
+          });
+        }catch(e){}
+      });
+      var sels=['.vjs-big-play-button','.jw-icon-playback','.plyr__control--overlaid','button.watch-btn','.watch-btn','[class*="play"]','button[aria-label*="Play"]','button[aria-label*="تشغيل"]'];
+      for(var i=0;i<sels.length;i++){
+        document.querySelectorAll(sels[i]).forEach(function(el){
+          try{el.click();}catch(e){}
+        });
+      }
+    }catch(e){}
+    if(tries<36)setTimeout(kick,500);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(kick,150);});
+  else setTimeout(kick,150);
+  try{new MutationObserver(function(){kick();}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+})();
 </script>`;
     if (/<head[^>]*>/i.test(html)) {
       return html.replace(/<head[^>]*>/i, (m) => `${m}\n${base}\n${shield}`);

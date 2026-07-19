@@ -323,6 +323,7 @@ function ensurePlayer() {
 function openPlayer(tile) {
   const sheet = $("#player-sheet");
   sheet.hidden = false;
+  // Tile tap counts as a user gesture — start playback ASAP
   ensurePlayer().openTile(tile);
 }
 
@@ -953,7 +954,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=47"),
+      navigator.serviceWorker.register("./sw.js?v=48"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

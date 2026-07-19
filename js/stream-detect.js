@@ -155,3 +155,61 @@ export function syriaHelpersScript() {
   });
 })();`;
 }
+
+/** Auto-click play + start videos when a tile opens (injected into embeds). */
+export function autoPlayScript() {
+  return `
+(function(){
+  if(window._shaibAutoPlay)return;window._shaibAutoPlay=true;
+  var tries=0;
+  function clickPlayUi(){
+    var sels=[
+      '.vjs-big-play-button','.jw-icon-playback','.plyr__control--overlaid',
+      'button.watch-btn','.watch-btn','[class*="play-btn"]','[class*="PlayBtn"]',
+      '.STING-web-SVG-Play','[class*="STING-web-SVG-Play"]',
+      '.MT_MaskText','[class*="MT_MaskText"]',
+      '.overlay-match .text-match','.text-match','.overlay-match',
+      'button[aria-label*="Play"]','button[aria-label*="play"]','button[aria-label*="تشغيل"]',
+      '.play-button','.btn-play','[class*="video-play"]','[class*="big-play"]',
+      'video'
+    ];
+    for(var i=0;i<sels.length;i++){
+      var nodes=document.querySelectorAll(sels[i]);
+      for(var j=0;j<nodes.length;j++){
+        var el=nodes[j];
+        if(!el) continue;
+        try{
+          if(el.tagName==='VIDEO'){
+            el.setAttribute('playsinline','');
+            el.setAttribute('webkit-playsinline','');
+            el.setAttribute('autoplay','');
+            el.playsInline=true;
+            var p=el.play();
+            if(p&&p.catch){
+              p.catch(function(){
+                try{el.muted=true;el.defaultMuted=true;el.play().then(function(){
+                  setTimeout(function(){try{el.muted=false;}catch(e){}},400);
+                }).catch(function(){});}catch(e){}
+              });
+            }
+          } else {
+            el.click();
+            el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+          }
+        }catch(e){}
+      }
+    }
+  }
+  function tick(){
+    tries++;
+    clickPlayUi();
+    if(tries<40) setTimeout(tick, 500);
+  }
+  function start(){ setTimeout(tick, 200); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+  try{
+    new MutationObserver(function(){ clickPlayUi(); }).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+})();`;
+}

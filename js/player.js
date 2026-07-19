@@ -5,7 +5,12 @@ import {
   syncAdblockFromEngine,
 } from "./adblock.js";
 import { prepareFilters } from "./filter-engine.js";
-import { streamDetectScript, fastServerScript, syriaHelpersScript } from "./stream-detect.js";
+import {
+  streamDetectScript,
+  fastServerScript,
+  syriaHelpersScript,
+  autoPlayScript,
+} from "./stream-detect.js";
 
 /** Never block the player on filter downloads — seed lists already work. */
 async function ensurePlayerFilters() {
@@ -202,6 +207,64 @@ export function createPlayerController(opts) {
     body.innerHTML = "";
   }
 
+  /** Keep audio unlocked across async player loads after a tile tap. */
+  function unlockMediaPlayback() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        const ctx = new AC();
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.0001;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(0);
+        osc.stop(ctx.currentTime + 0.01);
+        setTimeout(() => {
+          try {
+            ctx.close();
+          } catch (_) {}
+        }, 200);
+      }
+    } catch (_) {}
+  }
+
+  function tryAutoPlay(video) {
+    if (!video) return;
+    try {
+      video.playsInline = true;
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+      video.setAttribute("autoplay", "");
+      const run = () => {
+        const p = video.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(() => {
+            const wasMuted = video.muted;
+            video.muted = true;
+            video.defaultMuted = true;
+            video
+              .play()
+              .then(() => {
+                if (!wasMuted) {
+                  setTimeout(() => {
+                    try {
+                      video.muted = false;
+                    } catch (_) {}
+                  }, 350);
+                }
+              })
+              .catch(() => {});
+          });
+        }
+      };
+      run();
+      video.addEventListener("loadeddata", run, { once: true });
+      video.addEventListener("canplay", run, { once: true });
+    } catch (_) {}
+  }
+
   function playHls(title, url) {
     titleEl.textContent = title;
     clear();
@@ -218,6 +281,8 @@ export function createPlayerController(opts) {
     video.playsInline = true;
     video.autoplay = true;
     video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    video.setAttribute("autoplay", "");
     stage.appendChild(video);
     wrap.appendChild(stage);
     body.appendChild(wrap);
@@ -225,17 +290,25 @@ export function createPlayerController(opts) {
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
+      tryAutoPlay(video);
       return;
     }
     if (window.Hls?.isSupported()) {
-      const hls = new window.Hls({ enableWorker: true });
+      const hls = new window.Hls({
+        enableWorker: true,
+        autoStartLoad: true,
+      });
       attachHlsAdblock(hls);
       setHls(hls);
       hls.loadSource(url);
       hls.attachMedia(video);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, () => tryAutoPlay(video));
+      hls.on(window.Hls.Events.MEDIA_ATTACHED, () => tryAutoPlay(video));
+      tryAutoPlay(video);
       return;
     }
     video.src = url;
+    tryAutoPlay(video);
   }
 
   function goPlaylist(delta) {
@@ -333,7 +406,7 @@ export function createPlayerController(opts) {
     stage.className = "player-stage";
     wrap.appendChild(stage);
 
-    let inject = syriaHelpersScript();
+    let inject = syriaHelpersScript() + autoPlayScript();
     if (tile.autoFastServer) inject += fastServerScript();
 
     const mounted = await mountShielded(tile.url, inject);
@@ -355,8 +428,9 @@ export function createPlayerController(opts) {
     clear();
     body.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
 
-    const mode = tile.mode || "manual";
-    let autoOn = mode !== "manual";
+    // Always auto-start streams when entering a domain tile
+    const mode = tile.mode && tile.mode !== "manual" ? tile.mode : "stingPlay";
+    let autoOn = true;
 
     const wrap = document.createElement("div");
     wrap.className = "player-stack";
@@ -408,22 +482,22 @@ export function createPlayerController(opts) {
     wrap.appendChild(status);
     wrap.appendChild(stage);
 
-    if (mode !== "manual") {
-      listenForStreams((streamUrl) => {
-        status.textContent = t("streamFound");
-        playHls(tile.title, streamUrl);
-      });
-    }
+    listenForStreams((streamUrl) => {
+      status.textContent = t("streamFound");
+      playHls(tile.title, streamUrl);
+    });
 
-    const inject = streamDetectScript(mode) + syriaHelpersScript();
+    const inject = streamDetectScript(mode) + syriaHelpersScript() + autoPlayScript();
     const mounted = await mountShielded(tile.url, inject);
     stage.innerHTML = "";
     stage.appendChild(mounted.frame);
-    status.textContent =
-      mode === "manual" ? t("adblockOn") : `${t("adblockOn")} · ${t("domainAuto")}`;
+    status.textContent = `${t("adblockOn")} · ${t("domainAuto")}`;
 
     body.innerHTML = "";
     body.appendChild(wrap);
+    try {
+      currentIframe?.contentWindow?._shaibSetAutoClick?.(true);
+    } catch (_) {}
   }
 
   /** Custom browser — every navigation goes through AdBlock */
@@ -454,7 +528,10 @@ export function createPlayerController(opts) {
       }
       status.textContent = t("adblockLoading");
       stage.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
-      const mounted = await mountShielded(url, syriaHelpersScript());
+      const mounted = await mountShielded(
+        url,
+        syriaHelpersScript() + autoPlayScript()
+      );
       stage.innerHTML = "";
       stage.appendChild(mounted.frame);
       status.textContent = t("adblockScanning");
@@ -514,7 +591,10 @@ export function createPlayerController(opts) {
       ]);
       const st = document.createElement("div");
       st.className = "player-stage";
-      const mounted = await mountShielded(raw, syriaHelpersScript());
+      const mounted = await mountShielded(
+        raw,
+        syriaHelpersScript() + autoPlayScript()
+      );
       st.appendChild(mounted.frame);
       stack.appendChild(tools);
       stack.appendChild(status);
@@ -530,6 +610,7 @@ export function createPlayerController(opts) {
   }
 
   async function openTile(tile) {
+    unlockMediaPlayback();
     titleEl.textContent = tile.title;
     if (Array.isArray(tile.playlist) && tile.playlist.length) {
       playlist = {
