@@ -1,7 +1,7 @@
 /* Shaib Sport PWA — standalone service worker (app shell + ad blocking) */
 importScripts("./js/adblock-sw-hosts.js");
 
-const CACHE = "shaib-sport-pwa-v8";
+const CACHE = "shaib-sport-pwa-v9";
 const ASSETS = [
   "./",
   "./index.html",
@@ -21,6 +21,7 @@ const ASSETS = [
   "./js/adblock-sw-hosts.js",
   "./js/filter-lists.js",
   "./js/filter-engine.js",
+  "./js/global-adblock.js",
   "./js/stream-detect.js",
   "./js/player.js",
   "./js/app.js",
@@ -76,6 +77,14 @@ const ALLOW_PARTS = [
   "adtidy.org",
   "o0.pages.dev",
   "filters.adtidy",
+  "oisd.nl",
+  "yoyo.org",
+  "ublockorigin.github.io",
+  "hagezi",
+  "1hosts",
+  "badmojr",
+  "jerryn70",
+  "stevenblack",
 ];
 
 let hostSet = new Set((self.AD_HOSTS || []).map((h) => String(h).toLowerCase()));
@@ -202,6 +211,10 @@ self.addEventListener("fetch", (event) => {
     url.hostname.includes("adtidy.org") ||
     url.hostname.includes("o0.pages.dev") ||
     url.hostname.includes("pages.dev") ||
+    url.hostname.includes("oisd.nl") ||
+    url.hostname.includes("yoyo.org") ||
+    url.hostname.includes("ublockorigin.github.io") ||
+    url.hostname.includes("hagezi") ||
     url.pathname.includes(".m3u8");
 
   if (isApi) {

@@ -12,6 +12,7 @@ import { isLoggedIn, login, logout } from "./auth.js";
 import { createPlayerController } from "./player.js";
 import { prepareFilters, onFilterProgress } from "./filter-engine.js";
 import { syncAdblockFromEngine } from "./adblock.js";
+import { installGlobalAdblock, loadShieldedIframe } from "./global-adblock.js";
 
 const SOUTH_ARABIA_FLAG =
   "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Flag_of_South_Yemen.svg/3840px-Flag_of_South_Yemen.svg.png";
@@ -343,9 +344,10 @@ async function loadInternational(force) {
   const frame = $("#bracket-frame");
   const lang = state.prefs.lang;
 
-  frame.src = bracketUrl(lang);
   $("#bracket-label").textContent = t(lang, "bracket");
   $("#teams-label").textContent = t(lang, "teams");
+  // International bracket iframe — load through AdBlock shield
+  loadShieldedIframe(frame, bracketUrl(lang));
 
   if (!force && state.cache.knockout) {
     renderKnockout(koEl, state.cache.knockout, lang);
@@ -518,10 +520,13 @@ function setFilterProgressUI(p) {
 }
 
 async function ensureFiltersReady() {
+  // Seed-level protection on immediately (all tabs)
+  installGlobalAdblock();
   const unsub = onFilterProgress(setFilterProgressUI);
   const job = prepareFilters()
     .then((stats) => {
       syncAdblockFromEngine();
+      installGlobalAdblock();
       setFilterProgressUI({
         ready: true,
         done: stats.progress?.total || 0,
@@ -533,15 +538,18 @@ async function ensureFiltersReady() {
     })
     .catch(() => {
       syncAdblockFromEngine();
+      installGlobalAdblock();
     });
 
   // Don't block the UI for huge remote lists — seed/cache apply immediately;
-  // full lists finish in background and sync into SW + player shield.
+  // full lists finish in background and sync into SW + all-tab shield.
   await Promise.race([job, new Promise((r) => setTimeout(r, 3500))]);
   syncAdblockFromEngine();
+  installGlobalAdblock();
   unsub();
   job.finally(() => {
     syncAdblockFromEngine();
+    installGlobalAdblock();
     setTimeout(() => {
       ["#filter-progress", "#filter-progress-login"].forEach((sel) => {
         const el = $(sel);

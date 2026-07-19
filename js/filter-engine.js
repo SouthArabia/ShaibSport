@@ -3,10 +3,10 @@ import { AD_HOSTS as SEED_HOSTS, COSMETIC_SELECTORS as SEED_COSMETICS } from "./
 
 const IDB_NAME = "shaib_filters";
 const IDB_STORE = "cache";
-const CACHE_KEY = "v1";
+const CACHE_KEY = "v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_HOSTS = 80_000;
-const MAX_COSMETICS = 12_000;
+const MAX_HOSTS = 120_000;
+const MAX_COSMETICS = 15_000;
 
 const state = {
   ready: false,
