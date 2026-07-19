@@ -249,7 +249,7 @@ export async function fetchKnockout() {
     await kvSet("knockout", json);
     return json;
   }
-  return { teams: [], stage: "", tournament: "International" };
+  return { teams: [], stage: "", tournament: "World Cup" };
 }
 
 export function bracketUrl(lang) {
