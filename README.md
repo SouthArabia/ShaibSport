@@ -4,7 +4,7 @@ Standalone progressive web app.
 
 ## Live site
 
-**https://southarabia.github.io/SAUSA/**
+**https://southarabia.github.io/ShaibSport/**
 
 ## Local run
 
