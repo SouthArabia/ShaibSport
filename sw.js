@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v74";
+const CACHE = "shaib-sport-pwa-v75";
 const ASSETS = [
   "./",
   "./index.html",
@@ -163,7 +163,7 @@ function isAdHost(host) {
     if (i === -1) break;
     h = h.slice(i + 1);
   }
-  return /(^|\.)ads?\d*\.|doubleclick|adservice|adsystem|pagead|popads|propeller|exoclick|taboola|outbrain|criteo|prebid|adnxs|googlesyndication|acscdn|baillieumbered|histats|statcounter/.test(
+  return /(^|\.)ads?\d*\.|doubleclick|adservice|adsystem|pagead|popads|propeller|exoclick|taboola|outbrain|criteo|prebid|adnxs|googlesyndication|acscdn|baillieumbered|histats|statcounter|llvpn|guruvpnapp/.test(
     host
   );
 }
@@ -276,7 +276,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Hard-block known play-button popup hosts (iOS Safari new tabs / navigations)
-  if (host.includes("guruvpnapp") || /fifa-wc-2026/i.test(url.pathname)) {
+  if (host.includes("guruvpnapp") || host.includes("llvpn") || /fifa-wc-2026/i.test(url.pathname)) {
     event.respondWith(
       new Response("", {
         status: 204,
