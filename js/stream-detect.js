@@ -177,6 +177,75 @@ export function syriaHelpersScript() {
 })();`;
 }
 
+/**
+ * Lock non-player site iframes: no popups, no top-window escapes,
+ * keep navigations inside the iframe only.
+ */
+export function siteLockScript() {
+  return `
+(function(){
+  if(window._shaibSiteLock)return;window._shaibSiteLock=true;
+  try{
+    window.open=function(){return null;};
+    window.showModalDialog=function(){return null;};
+    window.alert=window.alert||function(){};
+  }catch(e){}
+  try{
+    Object.defineProperty(window,'open',{configurable:true,writable:true,value:function(){return null;}});
+  }catch(e){}
+  function stayInside(u){
+    try{
+      if(!u) return true;
+      var s=String(u);
+      if(s.charAt(0)==='#' || s.indexOf('javascript:')===0) return true;
+      var dest=new URL(s, location.href);
+      // Block schemes that escape the iframe / download junk
+      if(dest.protocol!=='http:' && dest.protocol!=='https:' && dest.protocol!=='blob:' && dest.protocol!=='data:') return false;
+      return true;
+    }catch(e){return false;}
+  }
+  try{
+    var _assign=location.assign.bind(location);
+    var _replace=location.replace.bind(location);
+    location.assign=function(u){ if(!stayInside(u)) return; return _assign(u); };
+    location.replace=function(u){ if(!stayInside(u)) return; return _replace(u); };
+  }catch(e){}
+  document.addEventListener('click',function(ev){
+    var a=ev.target&&ev.target.closest&&ev.target.closest('a');
+    if(!a)return;
+    var href=a.getAttribute('href')||'';
+    var t=a.getAttribute('target')||'';
+    if(t==='_blank' || t==='_top' || t==='_parent'){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(href && stayInside(href)){
+        try{ location.href=href; }catch(e){}
+      }
+      return;
+    }
+    if(/^(mailto:|tel:|intent:|market:)/i.test(href)){
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+  },true);
+  // Keep target=_blank from leaving the iframe
+  try{
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        (m.addedNodes||[]).forEach(function(n){
+          if(!n||n.nodeType!==1)return;
+          if(n.tagName==='A' && n.target==='_blank') n.target='_self';
+          try{ n.querySelectorAll&&n.querySelectorAll('a[target="_blank"]').forEach(function(a){a.target='_self';}); }catch(e){}
+        });
+      });
+    }).observe(document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+  document.querySelectorAll('a[target="_blank"],a[target="_top"],a[target="_parent"]').forEach(function(a){
+    try{a.target='_self';}catch(e){}
+  });
+})();`;
+}
+
 /** Auto-click play + start videos when a tile opens (injected into embeds). */
 export function autoPlayScript() {
   return `

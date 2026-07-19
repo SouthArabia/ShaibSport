@@ -10,7 +10,12 @@ import {
   fastServerScript,
   syriaHelpersScript,
   autoPlayScript,
+  siteLockScript,
 } from "./stream-detect.js";
+
+/** Sandbox for website tiles — iframe only, no popups, no top redirects */
+const SITE_SANDBOX =
+  "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads";
 
 /** Never block opening the player — EasyList loads in background. */
 async function ensurePlayerFilters() {
@@ -95,7 +100,7 @@ function toolbar(buttons) {
  * Player iframe. Stream hosts reject sandbox + no-referrer ("إخفاء المصدر").
  * Never set referrerpolicy=no-referrer on embeds — players block that.
  */
-function mountLockedIframe(url, { sandbox = false } = {}) {
+function mountLockedIframe(url, { sandbox = false, siteLock = false } = {}) {
   const frame = document.createElement("iframe");
   frame.className = "player-iframe";
   frame.src = url;
@@ -106,24 +111,28 @@ function mountLockedIframe(url, { sandbox = false } = {}) {
   frame.setAttribute("allowfullscreen", "");
   // Explicit referrer — empty/no-referrer triggers syria-player "إخفاء المصدر" block
   frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-  if (sandbox) {
-    // NO allow-popups, NO allow-top-navigation
-    frame.setAttribute(
-      "sandbox",
-      "allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
-    );
+  if (sandbox || siteLock) {
+    // NO allow-popups, NO allow-top-navigation — stay inside iframe
+    frame.setAttribute("sandbox", SITE_SANDBOX);
   }
   return frame;
 }
 
-function configureFrame(frame) {
+function configureFrame(frame, { siteLock = false } = {}) {
   frame.setAttribute(
     "allow",
     "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
   );
   frame.setAttribute("allowfullscreen", "");
   frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  if (siteLock) {
+    frame.setAttribute("sandbox", SITE_SANDBOX);
+  }
   return frame;
+}
+
+function siteInjectBundle(extra = "") {
+  return `${siteLockScript()}\n${extra || ""}`;
 }
 
 /**
@@ -328,11 +337,12 @@ export function createPlayerController(opts) {
     });
   }
 
+  /**
+   * Stream / syria player embeds (no site sandbox — players reject it).
+   */
   async function mountShielded(url, injectExtra = "") {
-    // Show player immediately; refresh filters in background
     ensurePlayerFilters().catch(() => {});
 
-    // Stream hosts: same-origin SW proxy (keeps syria-player working)
     if (isDirectPlayerUrl(url)) {
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
@@ -346,7 +356,7 @@ export function createPlayerController(opts) {
       if (html && /<html|<body|<div|<script/i.test(html)) {
         let cleaned;
         try {
-          cleaned = cleanHtml(html, url); // EasyList shield (capped)
+          cleaned = cleanHtml(html, url);
         } catch (_) {
           cleaned = html;
         }
@@ -366,10 +376,51 @@ export function createPlayerController(opts) {
       }
     } catch (_) {}
 
-    // Last resort: direct iframe so the player always shows
     const frame = configureFrame(mountLockedIframe(url, { sandbox: false }));
     currentIframe = frame;
     return { frame, mode: "direct" };
+  }
+
+  /**
+   * Non-player website tiles: always iframe, no popups, no top redirects,
+   * continuous EasyList adblock inside the frame when srcdoc works.
+   */
+  async function mountSiteFrame(url, injectExtra = "") {
+    ensurePlayerFilters().catch(() => {});
+    const inject = siteInjectBundle(injectExtra);
+
+    try {
+      const html = await fetchHtml(url);
+      if (html && /<html|<body|<div|<script/i.test(html)) {
+        let cleaned;
+        try {
+          cleaned = cleanHtml(html, url); // continuous adblock shield
+        } catch (_) {
+          cleaned = String(html);
+        }
+        const extras = `<script>${inject}</script>`;
+        if (/<\/body>/i.test(cleaned)) {
+          cleaned = cleaned.replace(/<\/body>/i, `${extras}</body>`);
+        } else {
+          cleaned += extras;
+        }
+        const frame = configureFrame(document.createElement("iframe"), {
+          siteLock: true,
+        });
+        frame.className = "player-iframe";
+        frame.srcdoc = cleaned;
+        currentIframe = frame;
+        return { frame, mode: "site-shielded" };
+      }
+    } catch (_) {}
+
+    // Fallback: sandboxed iframe (still blocks popups / top navigation)
+    const frame = configureFrame(
+      mountLockedIframe(url, { siteLock: true }),
+      { siteLock: true }
+    );
+    currentIframe = frame;
+    return { frame, mode: "site-direct" };
   }
 
   function listenForStreams(onStream, { once = true } = {}) {
@@ -391,7 +442,7 @@ export function createPlayerController(opts) {
     playHls(tile.title, tile.url);
   }
 
-  /** Browser / Fox — always shielded (continuous AdBlock) */
+  /** Syria / stream browser tiles — player proxy path */
   async function openBrowser(tile) {
     titleEl.textContent = tile.title;
     clear();
@@ -416,10 +467,31 @@ export function createPlayerController(opts) {
     const stage = document.createElement("div");
     stage.className = "player-stage";
     wrap.appendChild(stage);
-
-    // Mount shell first so the player UI always appears
     body.innerHTML = "";
     body.appendChild(wrap);
+
+    // Non-player browser tiles (e.g. Fox / sites): locked site iframe
+    if (!isDirectPlayerUrl(tile.url)) {
+      try {
+        const mounted = await mountSiteFrame(
+          tile.url,
+          autoPlayScript() + (tile.autoFastServer ? fastServerScript() : "")
+        );
+        stage.innerHTML = "";
+        stage.appendChild(mounted.frame);
+        status.textContent = t("adblockScanning");
+      } catch (_) {
+        stage.innerHTML = "";
+        const frame = configureFrame(
+          mountLockedIframe(tile.url, { siteLock: true }),
+          { siteLock: true }
+        );
+        stage.appendChild(frame);
+        currentIframe = frame;
+        status.textContent = t("adblockOn");
+      }
+      return;
+    }
 
     let inject = syriaHelpersScript() + autoPlayScript();
     if (tile.autoFastServer) inject += fastServerScript();
@@ -438,13 +510,12 @@ export function createPlayerController(opts) {
     }
   }
 
-  /** Domain — shield + stream detect; no unblocked direct open */
+  /** Domain sites — iframe only, no popups/redirects, continuous adblock */
   async function openDomain(tile) {
     titleEl.textContent = tile.title;
     clear();
     body.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
 
-    // Always auto-start streams when entering a domain tile
     const mode = tile.mode && tile.mode !== "manual" ? tile.mode : "stingPlay";
     let autoOn = true;
 
@@ -505,15 +576,18 @@ export function createPlayerController(opts) {
       playHls(tile.title, streamUrl);
     });
 
-    const inject = streamDetectScript(mode) + syriaHelpersScript() + autoPlayScript();
+    const inject = streamDetectScript(mode) + autoPlayScript();
     try {
-      const mounted = await mountShielded(tile.url, inject);
+      const mounted = await mountSiteFrame(tile.url, inject);
       stage.innerHTML = "";
       stage.appendChild(mounted.frame);
       status.textContent = `${t("adblockOn")} · ${t("domainAuto")}`;
     } catch (_) {
       stage.innerHTML = "";
-      const frame = configureFrame(mountLockedIframe(tile.url, { sandbox: false }));
+      const frame = configureFrame(
+        mountLockedIframe(tile.url, { siteLock: true }),
+        { siteLock: true }
+      );
       stage.appendChild(frame);
       currentIframe = frame;
       status.textContent = t("adblockOn");
@@ -523,7 +597,7 @@ export function createPlayerController(opts) {
     } catch (_) {}
   }
 
-  /** Custom browser — every navigation goes through AdBlock */
+  /** Custom browser — site iframe + adblock, no popups */
   function openCustom(tile) {
     titleEl.textContent = tile.title;
     clear();
@@ -551,13 +625,21 @@ export function createPlayerController(opts) {
       }
       status.textContent = t("adblockLoading");
       stage.innerHTML = `<div class="loading" style="margin:40px;border:0">${t("adblockLoading")}</div>`;
-      const mounted = await mountShielded(
-        url,
-        syriaHelpersScript() + autoPlayScript()
-      );
-      stage.innerHTML = "";
-      stage.appendChild(mounted.frame);
-      status.textContent = t("adblockScanning");
+      try {
+        const mounted = await mountSiteFrame(url, autoPlayScript());
+        stage.innerHTML = "";
+        stage.appendChild(mounted.frame);
+        status.textContent = t("adblockScanning");
+      } catch (_) {
+        stage.innerHTML = "";
+        const frame = configureFrame(
+          mountLockedIframe(url, { siteLock: true }),
+          { siteLock: true }
+        );
+        stage.appendChild(frame);
+        currentIframe = frame;
+        status.textContent = t("adblockOn");
+      }
     };
 
     form.addEventListener("submit", (e) => {
@@ -575,7 +657,7 @@ export function createPlayerController(opts) {
     load(start);
   }
 
-  /** CH4 — paste; media → video; pages → shielded */
+  /** CH4 — media → HLS player; pages → locked site iframe */
   function openCH4(tile) {
     titleEl.textContent = tile.title;
     clear();
@@ -596,7 +678,11 @@ export function createPlayerController(opts) {
       if (!raw) return;
       if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
       if (isAdUrl(raw)) return;
-      if (isMediaUrl(raw)) {
+      if (isMediaUrl(raw) || isDirectPlayerUrl(raw)) {
+        if (isDirectPlayerUrl(raw)) {
+          openBrowser({ ...tile, kind: "browser", url: raw, title: tile.title });
+          return;
+        }
         playHls(tile.title, raw);
         return;
       }
@@ -614,16 +700,24 @@ export function createPlayerController(opts) {
       ]);
       const st = document.createElement("div");
       st.className = "player-stage";
-      const mounted = await mountShielded(
-        raw,
-        syriaHelpersScript() + autoPlayScript()
-      );
-      st.appendChild(mounted.frame);
       stack.appendChild(tools);
       stack.appendChild(status);
       stack.appendChild(st);
       body.innerHTML = "";
       body.appendChild(stack);
+      try {
+        const mounted = await mountSiteFrame(raw, autoPlayScript());
+        st.appendChild(mounted.frame);
+        status.textContent = t("adblockScanning");
+      } catch (_) {
+        const frame = configureFrame(
+          mountLockedIframe(raw, { siteLock: true }),
+          { siteLock: true }
+        );
+        st.appendChild(frame);
+        currentIframe = frame;
+        status.textContent = t("adblockOn");
+      }
     };
 
     wrap.querySelector("#ch4-go").onclick = go;
