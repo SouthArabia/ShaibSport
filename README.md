@@ -1,36 +1,19 @@
-# Shaib Sport PWA
+# Shaib Sport PWA (private source)
 
-Standalone progressive web app. Deploy or serve this folder alone — it does **not** need the iOS Xcode project.
+Private source repository for the Shaib Sport progressive web app.
 
-## Run
+## Live site
+
+**https://southarabia.github.io/**
+
+Published from the public Pages repo: [SouthArabia.github.io](https://github.com/SouthArabia/SouthArabia.github.io)
+
+> GitHub Free cannot host Pages from a private repo, so the live site is mirrored to that public repository. Keep secrets and unpublished work here; deploy updates by syncing to `SouthArabia.github.io`.
+
+## Local run
 
 ```bash
-cd ~/Desktop/ShaipSportPWA
 python3 -m http.server 8765
-# or: ./serve.sh
 ```
 
 Open `http://localhost:8765`
-
-## What’s bundled (offline shell)
-
-| Path | Purpose |
-|------|---------|
-| `config/live_config.json` | Matches / canvas tiles |
-| `config/Knockout.json` | International teams |
-| `filters/*.json` | App adblock lists |
-| `vendor/hls.min.js` | HLS player |
-| `js/`, `css/`, `icons/`, `assets/` | App UI |
-
-First paint uses these files. Optional network refresh updates config/filters when online (`PWA.enableRemoteUpdates` in `js/pwa-config.js`).
-
-## Independence notes
-
-- No imports from the iOS app or other local projects
-- Auth gate is PWA-only (`js/auth.js`)
-- Community filter lists (EasyList, HaGeZi, etc.) load from public CDNs when online; seed hosts work offline
-- Live scores / streams still need the internet (ESPN, TheSportsDB, HLS)
-
-## Update bundled config
-
-Replace files under `config/` and `filters/`, bump the service worker cache name in `sw.js`, then hard-refresh.
