@@ -341,6 +341,30 @@ body {
 
 .tile:active { transform: scale(0.98); }
 
+.tile.tile-frozen,
+.tile.tile-frozen:active {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  border-color: rgba(212, 175, 55, 0.22);
+}
+
+.tile-notice {
+  order: -1;
+  width: 100%;
+  margin: -2px 0 6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(180, 40, 40, 0.22);
+  color: #ffb4b4;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .tile.emphasized {
   border-color: rgba(212, 175, 55, 0.4);
   border-width: 1.2px;

@@ -125,7 +125,9 @@
       "id": "browser-6",
       "title": "قناة 6",
       "url": "https://www.majed-koora.com/",
-      "enabled": true
+      "enabled": false,
+      "frozen": true,
+      "notice": "موقف من قبل يوسف"
     },
     {
       "id": "browser-7",

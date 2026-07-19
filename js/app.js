@@ -193,14 +193,21 @@ function renderList(el, matches, lang, error) {
 }
 
 function tileButton(tile, extraClass = "") {
-  const cls = `tile ${tile.emphasized ? "emphasized" : ""} ${extraClass}`.trim();
-  const badge = tile.live
-    ? `<span class="live-pill">مباشر</span>`
-    : tile.emphasized && tile.kind === "domain"
-      ? `<span style="color:var(--ok)">${icons.play}</span>`
-      : tile.kind === "browser"
-        ? `<span class="dot-live"></span>`
-        : "";
+  const frozen = !!tile.frozen;
+  const cls = `tile ${tile.emphasized ? "emphasized" : ""} ${frozen ? "tile-frozen" : ""} ${extraClass}`.trim();
+  const notice = tile.notice
+    ? `<div class="tile-notice">${tile.notice}</div>`
+    : "";
+  const badge = frozen
+    ? ""
+    : tile.live
+      ? `<span class="live-pill">مباشر</span>`
+      : tile.emphasized && tile.kind === "domain"
+        ? `<span style="color:var(--ok)">${icons.play}</span>`
+        : tile.kind === "browser"
+          ? `<span class="dot-live"></span>`
+          : "";
+  const disabledAttr = frozen ? ' disabled aria-disabled="true"' : "";
 
   if (tile.kind === "custom" || tile.kind === "ch4") {
     const shield =
@@ -208,7 +215,8 @@ function tileButton(tile, extraClass = "") {
         ? `<span class="shield">${icons.shield}</span>`
         : "";
     return `
-      <button type="button" class="${cls} tile-wide" data-tile-id="${tile.id}">
+      <button type="button" class="${cls} tile-wide" data-tile-id="${tile.id}"${disabledAttr}>
+        ${notice}
         ${iconWrap(tile.icon || (tile.kind === "ch4" ? "search" : "safari"))}
         <div class="tile-copy">
           <div class="tile-title">${tile.title}</div>
@@ -220,7 +228,8 @@ function tileButton(tile, extraClass = "") {
   }
 
   return `
-    <button type="button" class="${cls}" data-tile-id="${tile.id}">
+    <button type="button" class="${cls}" data-tile-id="${tile.id}"${disabledAttr}>
+      ${notice}
       <div class="tile-top">
         ${icons[tile.icon] || icons.tv}
         ${badge}
@@ -235,6 +244,7 @@ function tileButton(tile, extraClass = "") {
 function bindCanvasClicks(root, model) {
   root.querySelectorAll("[data-tile-id]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      if (btn.disabled || btn.getAttribute("aria-disabled") === "true") return;
       const id = btn.dataset.tileId;
       const all = [
         ...model.topTiles,
@@ -243,6 +253,7 @@ function bindCanvasClicks(root, model) {
         ...model.bottomTiles,
       ].filter(Boolean);
       const tile = all.find((x) => x.id === id);
+      if (tile?.frozen) return;
       if (tile) openPlayer(tile);
     });
   });
@@ -808,7 +819,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=35"),
+      navigator.serviceWorker.register("./sw.js?v=36"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

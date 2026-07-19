@@ -5,6 +5,18 @@ function enabled(item) {
   return item && item.enabled !== false && item.url;
 }
 
+function isChannel6(item) {
+  return (
+    String(item?.id || "") === "browser-6" ||
+    /قناة\s*6/.test(String(item?.title || ""))
+  );
+}
+
+/** Keep frozen / channel-6 tiles on the canvas even when disabled. */
+function includeTile(item) {
+  return !!(item && (item.frozen || isChannel6(item) || enabled(item)));
+}
+
 function isFox(p) {
   const id = String(p.id || "").toLowerCase();
   const title = String(p.title || "").toLowerCase();
@@ -41,32 +53,34 @@ function browserSortKey(p) {
 
 /** Normalize live_config into Matches canvas sections. */
 export function buildCanvasModel(cfg = {}) {
-  const browsers = (cfg.browserPlayers || []).filter(enabled);
+  const browsers = (cfg.browserPlayers || []).filter(includeTile);
   const topBrowsers = browsers
     .filter((p) => !isFox(p))
     .sort((a, b) => browserSortKey(a) - browserSortKey(b))
     .map((p) => {
-      const syria = isSyria(p.url);
-      const yt = /youtube\.com|youtu\.be/i.test(p.url);
-      const autoFast =
-        String(p.id) === "browser-6" ||
-        /قناة\s*6/.test(p.title || "") ||
-        /majed-koora/i.test(p.url);
+      // Channel 6 stays on the grid but frozen (not tappable).
+      const frozen = isChannel6(p) || !!p.frozen;
+      const syria = !frozen && isSyria(p.url);
+      const yt = /youtube\.com|youtu\.be/i.test(p.url || "");
       return {
         kind: "browser",
         id: p.id,
         title: p.title,
-        url: p.url,
+        url: frozen ? "" : p.url,
         emphasized: syria,
         icon: syria ? "bolt" : "tv",
         streamSafe: syria || yt,
-        autoFastServer: autoFast,
+        autoFastServer: false,
         immersive: syria || isFox(p),
+        frozen,
+        notice: frozen
+          ? p.notice || "موقف من قبل يوسف"
+          : p.notice || "",
       };
     });
 
   const domains = (cfg.domainBrowsers || [])
-    .filter(enabled)
+    .filter(includeTile)
     .map((d) => ({
       kind: "domain",
       id: d.id,
