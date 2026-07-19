@@ -82,11 +82,13 @@ function parseEspnEvents(json, defaultCompetition = "Soccer") {
           id: homeTeam.id,
           name: shortName(homeTeam.displayName || homeTeam.name || "Home"),
           crest: homeTeam.logo || null,
+          abbreviation: homeTeam.abbreviation || null,
         },
         awayTeam: {
           id: awayTeam.id,
           name: shortName(awayTeam.displayName || awayTeam.name || "Away"),
           crest: awayTeam.logo || null,
+          abbreviation: awayTeam.abbreviation || null,
         },
         score: hs == null && as_ == null ? null : { home: hs ?? 0, away: as_ ?? 0 },
         status,

@@ -2,7 +2,7 @@
 importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 
-const CACHE = "shaib-sport-pwa-v22";
+const CACHE = "shaib-sport-pwa-v23";
 const ASSETS = [
   "./",
   "./index.html",
@@ -44,18 +44,27 @@ const ASSETS = [
 
 function withNoIndex(response) {
   if (!response) return response;
-  const headers = new Headers(response.headers);
-  headers.set(
-    "X-Robots-Tag",
-    "noindex, nofollow, noarchive, nosnippet, noimageindex, nocache"
-  );
-  headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("Referrer-Policy", "no-referrer");
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  // Opaque cross-origin responses (e.g. <img> to espncdn) cannot be rebuilt —
+  // wrapping them causes net::ERR_FAILED and blank crests/flags.
+  if (response.type === "opaque" || response.type === "opaqueredirect" || response.status === 0) {
+    return response;
+  }
+  try {
+    const headers = new Headers(response.headers);
+    headers.set(
+      "X-Robots-Tag",
+      "noindex, nofollow, noarchive, nosnippet, noimageindex, nocache"
+    );
+    headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("Referrer-Policy", "no-referrer");
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch (_) {
+    return response;
+  }
 }
 
 function botForbidden() {
@@ -88,6 +97,9 @@ const ALLOW_PARTS = [
   "jwplatform",
   "jwpcdn",
   "espn",
+  "espncdn",
+  "flagcdn",
+  "flagsapi",
   "thesportsdb",
   "githubusercontent",
   "corsproxy",
@@ -227,12 +239,15 @@ self.addEventListener("fetch", (event) => {
 
   const isApi =
     url.hostname.includes("espn.com") ||
+    url.hostname.includes("espncdn.com") ||
     url.hostname.includes("thesportsdb.com") ||
     url.hostname.includes("openligadb.de") ||
     url.hostname.includes("githubusercontent.com") ||
     url.hostname.includes("corsproxy") ||
     url.hostname.includes("allorigins") ||
     url.hostname.includes("jsdelivr.net") ||
+    url.hostname.includes("flagcdn.com") ||
+    url.hostname.includes("flagsapi.com") ||
     url.hostname.includes("easylist") ||
     url.hostname.includes("adtidy.org") ||
     url.hostname.includes("o0.pages.dev") ||
@@ -248,21 +263,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isNavigate = request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
+  // Cross-origin assets (images/fonts) — pass through; never wrap opaque responses
+  if (!sameOrigin) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetched = fetch(request)
         .then((res) => {
-          if (res.ok && sameOrigin) {
+          if (res.ok) {
             const copy = res.clone();
             caches.open(CACHE).then((cache) => cache.put(request, copy));
           }
           return withNoIndex(res);
         })
         .catch(() => (cached ? withNoIndex(cached) : cached));
-      const hit = cached || fetched;
-      return cached ? withNoIndex(cached) : hit;
+      return cached ? withNoIndex(cached) : fetched;
     })
   );
 });

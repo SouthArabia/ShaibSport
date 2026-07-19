@@ -67,10 +67,32 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
-function crest(url, name) {
-  if (url) return `<img src="${url}" alt="" loading="lazy" onerror="this.style.display='none'">`;
+function letterCrest(name) {
   const letter = (name || "?").trim().charAt(0).toUpperCase();
-  return `<span style="width:28px;height:28px;border-radius:6px;display:grid;place-items:center;background:rgba(255,255,255,.06);font-weight:800">${letter}</span>`;
+  return `<span class="crest-letter">${letter}</span>`;
+}
+
+/** Country / club badge with CDN fallbacks (never hide leaving a blank). */
+function crest(url, name, flagCode) {
+  const urls = [];
+  if (url) urls.push(url);
+  const fromLogo = String(url || "").match(/\/countries\/\d+\/([a-z0-9-]{2,6})\./i);
+  const code = String(flagCode || fromLogo?.[1] || "").toLowerCase();
+  if (code.length === 2) {
+    urls.push(`https://flagcdn.com/w80/${code}.png`);
+    urls.push(`https://flagcdn.com/${code}.svg`);
+  } else if (code.length === 3) {
+    // ESPN uses ISO3 in path; flagcdn wants ISO2 — still try ESPN path + flagsapi common codes
+    urls.push(`https://a.espncdn.com/i/teamlogos/countries/500/${code}.png`);
+  }
+  if (!urls.length) return letterCrest(name);
+
+  const primary = urls[0];
+  const rest = urls
+    .slice(1)
+    .map((u) => u.replace(/"/g, ""))
+    .join("|");
+  return `<img class="crest-img" src="${primary}" alt="" loading="lazy" data-fallbacks="${rest}" onerror="window.__shaibCrestFallback&&window.__shaibCrestFallback(this)" />`;
 }
 
 function statusBadge(match, lang) {
@@ -85,6 +107,8 @@ function statusBadge(match, lang) {
 function renderMatchCard(match, lang) {
   const score =
     match.score != null ? `${match.score.home} – ${match.score.away}` : "vs";
+  const homeFlag = match.homeTeam.flagCode || match.homeTeam.abbreviation;
+  const awayFlag = match.awayTeam.flagCode || match.awayTeam.abbreviation;
   return `
     <article class="match-card">
       <div class="comp">
@@ -93,7 +117,7 @@ function renderMatchCard(match, lang) {
       </div>
       <div class="teams">
         <div class="team home">
-          ${crest(match.homeTeam.crest, match.homeTeam.name)}
+          ${crest(match.homeTeam.crest, match.homeTeam.name, homeFlag)}
           <div class="name">${match.homeTeam.name}</div>
         </div>
         <div class="scorebox">
@@ -101,7 +125,7 @@ function renderMatchCard(match, lang) {
           <div class="meta">${match.dateString || ""} · ${match.time || ""}</div>
         </div>
         <div class="team away">
-          ${crest(match.awayTeam.crest, match.awayTeam.name)}
+          ${crest(match.awayTeam.crest, match.awayTeam.name, awayFlag)}
           <div class="name">${match.awayTeam.name}</div>
         </div>
       </div>
@@ -537,7 +561,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=22"),
+      navigator.serviceWorker.register("./sw.js?v=23"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}
@@ -607,4 +631,20 @@ try {
 window.__shaibLogout = () => {
   logout();
   location.reload();
+};
+
+window.__shaibCrestFallback = (img) => {
+  if (!img) return;
+  const raw = img.getAttribute("data-fallbacks") || "";
+  const next = raw.split("|").filter(Boolean);
+  if (next.length) {
+    img.setAttribute("data-fallbacks", next.slice(1).join("|"));
+    img.src = next[0];
+    return;
+  }
+  const letter = (img.closest(".team")?.querySelector(".name")?.textContent || "?").trim().charAt(0).toUpperCase();
+  const span = document.createElement("span");
+  span.className = "crest-letter";
+  span.textContent = letter;
+  img.replaceWith(span);
 };

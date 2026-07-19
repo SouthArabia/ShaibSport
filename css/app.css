@@ -498,12 +498,25 @@ body {
 html[dir="rtl"] .team.away { text-align: start; align-items: start; }
 html[dir="rtl"] .team.home { text-align: end; align-items: end; }
 
-.team img {
+.team img,
+.team .crest-img {
   width: 28px;
   height: 28px;
   object-fit: contain;
   border-radius: 6px;
   background: rgba(255,255,255,0.04);
+}
+
+.team .crest-letter {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--gold);
 }
 
 .team .name {
