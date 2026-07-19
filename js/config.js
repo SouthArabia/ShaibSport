@@ -20,8 +20,7 @@ function isChannel1(item) {
   );
 }
 
-const CHANNEL1_URL =
-  "https://player.syria-player.live/albaplayer/beinmax1/?serv=1";
+const CHANNEL1_URL = "https://m4.kora-sami.com/splplayer/bmax1/";
 
 /** Keep frozen / channel-6 tiles on the canvas even when disabled. */
 function includeTile(item) {
@@ -35,7 +34,7 @@ function isFox(p) {
 }
 
 function isSyria(url = "") {
-  return /syria-player|shootsync|beinmax/i.test(url);
+  return /syria-player|shootsync|beinmax|kora-sami|splplayer/i.test(url);
 }
 
 const LIVE_PIN_ORDER = [

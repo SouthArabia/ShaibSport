@@ -3,7 +3,7 @@ importScripts("./js/adblock-sw-hosts.js");
 importScripts("./js/bot-guard.js");
 importScripts("./js/player-proxy-sw.js");
 
-const CACHE = "shaib-sport-pwa-v53";
+const CACHE = "shaib-sport-pwa-v54";
 const ASSETS = [
   "./",
   "./index.html",
@@ -87,6 +87,9 @@ const ALLOW_PARTS = [
   "syria-player",
   "shootsync",
   "albaplayer",
+  "beinmax",
+  "kora-sami",
+  "splplayer",
   "alarabiya",
   "aljazeera",
   "thehlive",
@@ -97,6 +100,9 @@ const ALLOW_PARTS = [
   "cloudfront",
   "cloudflare",
   "jsdelivr",
+  "clappr",
+  "amazonaws",
+  "amazonaws.com",
   "googleapis",
   "gstatic",
   "youtube",
@@ -127,6 +133,7 @@ const ALLOW_PARTS = [
   "badmojr",
   "jerryn70",
   "stevenblack",
+  "m3u8",
 ];
 
 let hostSet = new Set((self.AD_HOSTS || []).map((h) => String(h).toLowerCase()));

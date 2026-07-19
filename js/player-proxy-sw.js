@@ -1,7 +1,7 @@
 /* Service-worker helper: fetch stream player HTML, unwrap document.write, strip ads */
 (function (global) {
   const PLAYER_HOST_OK =
-    /syria-player|shootsync|albaplayer|beinmax|thehlive/i;
+    /syria-player|shootsync|albaplayer|beinmax|thehlive|kora-sami|splplayer/i;
 
   const AD_SRC_RE =
     /acscdn\.com|aclib\.js|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|mgid|revcontent|adservice|adsystem|popunder|clickunder|ad-delivery|adserver|\/ads\/|adsbygoogle|histats|statcounter|yandex\.ru\/ads|mc\.yandex/i;
@@ -23,13 +23,20 @@
   }
 
   function isPlayerAssetUrl(u) {
-    return /syria-player|shootsync|albaplayer|beinmax|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|hlsjs|videojs|plyr|clappr|googleapis|gstatic/i.test(
+    return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|googleapis|gstatic/i.test(
       String(u || "")
     );
   }
 
+  /** Channel pages with ?serv= use Clappr from jsdelivr.xyz (often blocked) — use official .net */
+  function rewritePlayerCdns(html) {
+    return String(html || "")
+      .replace(/cdn\.jsdelivr\.xyz/gi, "cdn.jsdelivr.net")
+      .replace(/\/\/cdn\.jsdelivr\.net/gi, "https://cdn.jsdelivr.net");
+  }
+
   function stripAds(html) {
-    let out = String(html || "");
+    let out = rewritePlayerCdns(html);
     const isAdReq =
       typeof global.SHAIB_IS_AD_REQUEST === "function"
         ? global.SHAIB_IS_AD_REQUEST
@@ -48,6 +55,10 @@
       if (/function\s+_kill|SB_Blocked|تنبيه حماية/i.test(full)) {
         return "<!-- shaib: embed guard removed -->";
       }
+      // Keep Clappr / player bootstraps even if they mention ad keywords in strings
+      if (/Clappr\.Player|new\s+Clappr|jwplayer\s*\(|videojs\s*\(/i.test(full)) {
+        return full;
+      }
       if (
         AD_SRC_RE.test(full) ||
         /adsbygoogle|aclib\s*\.|aclib\.run|runPop|runBanner|push\(.*ads/i.test(full)
@@ -60,12 +71,12 @@
     return out;
   }
 
-  /** Light EasyList runtime — no giant host dump (that was blanking the player). */
+  /** Light EasyList runtime — never touch player/stream CDNs. */
   function easyListRuntimeShield() {
     return `<script id="shaib-easylist-runtime">
 (function(){
   if(window.__shaibEasyListRuntime)return;window.__shaibEasyListRuntime=true;
-  var allow=/syria-player|shootsync|albaplayer|beinmax|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|googleapis|gstatic|hlsjs|videojs|plyr/i;
+  var allow=/syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer|jwplayer|jwplatform|jwpcdn|cloudflare|cloudfront|akamai|fastly|googleapis|gstatic|hlsjs|videojs|plyr|clappr|jsdelivr|amazonaws|s3\\.|m3u8/i;
   var adRe=/acscdn|aclib|baillieumbered|doubleclick|googlesyndication|pagead|popads|propeller|exoclick|trafficjunky|juicyads|adsterra|adservice|adsystem|\\/pagead\\/|adsbygoogle|popunder|clickunder/i;
   function bad(u){
     u=String(u||'');
@@ -142,8 +153,9 @@ a[href*="location.reload"]{
         var v=el.src||el.href||'';
         if(re.test(v)){el.remove();}
       });
-      document.querySelectorAll('.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,.aplr-icon-refresh,.aplr-icon-share,a[href*="serv="]').forEach(hide);
-      document.querySelectorAll('a,button,span,div,li').forEach(function(el){
+      document.querySelectorAll('.aplr-menu,.aplr-link,a.aplr-link,.aplr-exbtns,.aplr-action.showrefresh,.aplr-action.showshare,.aplr-icon-refresh,.aplr-icon-share,a[href*="serv="]').forEach(hide);
+      // Only hide explicit chrome controls — never walk all divs (breaks Clappr #player)
+      document.querySelectorAll('a.aplr-link,button.aplr-link,.aplr-action').forEach(function(el){
         var t=(el.textContent||'').replace(/\\s+/g,' ').trim();
         if(!t||t.length>40)return;
         if(uiHide.test(t)) hide(el);

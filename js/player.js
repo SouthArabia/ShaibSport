@@ -54,7 +54,9 @@ async function fetchHtml(url) {
 }
 
 function isDirectPlayerUrl(url = "") {
-  return /syria-player|shootsync|albaplayer|beinmax/i.test(url);
+  return /syria-player|shootsync|albaplayer|beinmax|kora-sami|splplayer/i.test(
+    url
+  );
 }
 
 /** Same-origin SW proxy strips ads while keeping a real origin (srcdoc is blocked by players). */
@@ -344,6 +346,14 @@ export function createPlayerController(opts) {
     ensurePlayerFilters().catch(() => {});
 
     if (isDirectPlayerUrl(url)) {
+      // kora-sami / clappr players: direct embed (proxy breaks stream referer)
+      if (/kora-sami|splplayer/i.test(url)) {
+        const frame = configureFrame(
+          mountLockedIframe(url, { sandbox: false })
+        );
+        currentIframe = frame;
+        return { frame, mode: "direct-player" };
+      }
       const frame = configureFrame(
         mountLockedIframe(proxiedPlayerUrl(url), { sandbox: false })
       );
