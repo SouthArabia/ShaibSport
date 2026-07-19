@@ -182,7 +182,7 @@ function renderMatchCard(match, lang) {
 function renderList(el, matches, lang, error) {
   if (error) {
     el.innerHTML = `<div class="error">${t(lang, "error")}<div style="margin-top:12px"><button class="btn" data-retry>${t(lang, "refresh")}</button></div></div>`;
-    el.querySelector("[data-retry]")?.addEventListener("click", () => refreshActive(true));
+    el.querySelector("[data-retry]")?.addEventListener("click", () => hardRefresh());
     return;
   }
   if (!matches?.length) {
@@ -349,6 +349,11 @@ function paintChrome() {
   setTheme(state.prefs.theme);
 
   $("#brand-sub").textContent = t(lang, "brandSub");
+  const refreshBtn = $("#refresh-btn");
+  if (refreshBtn) {
+    refreshBtn.title = t(lang, "hardRefresh");
+    refreshBtn.setAttribute("aria-label", t(lang, "hardRefresh"));
+  }
   $$(".tabbar button").forEach((btn) => {
     btn.querySelector("span").textContent = t(lang, btn.dataset.tab);
     btn.classList.toggle("active", btn.dataset.tab === state.prefs.tab);
@@ -402,7 +407,7 @@ async function loadMatches(force) {
     renderCanvas(state.cache.canvas, lang);
   } catch {
     root.innerHTML = `<div class="error">${t(lang, "error")}<div style="margin-top:12px"><button class="btn" id="retry-canvas">${t(lang, "refresh")}</button></div></div>`;
-    $("#retry-canvas")?.addEventListener("click", () => loadMatches(true));
+    $("#retry-canvas")?.addEventListener("click", () => hardRefresh());
   }
 }
 
@@ -666,7 +671,7 @@ async function loadIptv(force = false) {
     renderIptv();
   } catch {
     root.innerHTML = `<div class="error">${t(lang, "error")}<div style="margin-top:12px"><button class="btn" id="iptv-retry">${t(lang, "refresh")}</button></div></div>`;
-    $("#iptv-retry")?.addEventListener("click", () => loadIptv(true));
+    $("#iptv-retry")?.addEventListener("click", () => hardRefresh());
   }
 }
 
@@ -677,6 +682,36 @@ async function refreshActive(force = false) {
   else if (tab === "today") await loadToday(force);
   else if (tab === "international") await loadInternational(force);
   else if (tab === "iptv") await loadIptv(force);
+}
+
+let hardRefreshBusy = false;
+
+/** Clear SW + Cache Storage, then reload with a cache-busting URL (true hard refresh). */
+async function hardRefresh() {
+  if (hardRefreshBusy) return;
+  hardRefreshBusy = true;
+  const btn = $("#refresh-btn");
+  if (btn) {
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+  }
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if (window.caches?.keys) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch (_) {}
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set("_r", String(Date.now()));
+    location.replace(url.href);
+  } catch (_) {
+    location.reload();
+  }
 }
 
 function switchTab(tab) {
@@ -769,7 +804,7 @@ function bind() {
     ensureFiltersReady().catch(() => {});
   });
 
-  $("#refresh-btn")?.addEventListener("click", () => refreshActive(true));
+  $("#refresh-btn")?.addEventListener("click", () => hardRefresh());
   $("#player-close")?.addEventListener("click", closePlayer);
 
   $("#lang-ar")?.addEventListener("click", () => {
@@ -819,7 +854,7 @@ async function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   try {
     await Promise.race([
-      navigator.serviceWorker.register("./sw.js?v=36"),
+      navigator.serviceWorker.register("./sw.js?v=37"),
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (_) {}

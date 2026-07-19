@@ -124,7 +124,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="refresh-btn" type="button" aria-label="Refresh" title="Refresh">↻</button>
+        <button class="icon-btn" id="refresh-btn" type="button" aria-label="تحديث كامل" title="تحديث كامل">↻</button>
       </div>
     </div>
   </header>
@@ -276,7 +276,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=36";
+      var SW_URL = "./sw.js?v=37";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -294,7 +294,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=36"></script>
+  <script type="module" src="./js/app.js?v=37"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
