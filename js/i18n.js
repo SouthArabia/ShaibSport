@@ -43,7 +43,7 @@ const dict = {
     intlTitle: "كأس العالم",
     intlSub: "الفرق المتأهلة والمباريات",
     settingsTitle: "الإعدادات",
-    settingsSub: "اللغة والمظهر والخصوصية",
+    settingsSub: "اللغة والمظهر وإخلاء المسؤولية",
     language: "اللغة",
     theme: "المظهر",
     classic: "كلاسيك",
@@ -60,7 +60,7 @@ const dict = {
     eliminated: "مقصى",
     bracket: "رسم الإقصاء",
     teams: "الفرق",
-    privacy: "سياسة الخصوصية",
+    privacy: "إخلاء المسؤولية",
     contact: "تواصل",
     installTitle: "ثبّت التطبيق على جهازك",
     installBody: "أضفه للشاشة الرئيسية لاستخدامه كتطبيق.",
@@ -84,7 +84,7 @@ const dict = {
     gotIt: "حسناً",
     dismiss: "لاحقاً",
     privacyBody:
-      "الشعيب سبورت (نسخة الويب)\n\n• تُحفظ اللغة والمظهر محلياً على جهازك.\n• تُجلب نتائج المباريات من مصادر عامة على الإنترنت.\n• لا نطلب إنشاء حساب.\n• للتواصل: 415apps@gmail.com",
+      "السلام عليكم ورحمة الله وبركاته،\n\nبرنامج شعيب سبورت هو تطبيق تعليمي وإخباري يهدف إلى توفير معلومات رياضية ومحتوى متاح من مصادر خارجية.\n\nفي حال قام المستخدم بفتح أي قنوات، بما في ذلك قنوات beIN أو أي روابط بث أخرى، فإن هذه الروابط تعتبر محتوى مقدماً من المستخدمين أو مصادر خارجية، ولا يتم تخزينها أو استضافتها أو إدارتها من خلال مستودعات GitHub الخاصة بنا أو خوادم الإدارة أو أنظمتنا الداخلية.\n\nبرنامج شعيب سبورت غير مسؤول عن أي رابط أو بث أو محتوى خارجي يتم الوصول إليه من خلال التطبيق، ولا نملك أو نتحكم أو ندير هذه المصادر.\n\nكما أن البرنامج غير مسؤول عن:\n• أي إعلانات غير لائقة أو مخلة بالدين والأخلاق تظهر من خلال مصادر خارجية.\n• أي مخالفات حقوق نشر أو مطالبات قانونية تتعلق بالمحتوى الخارجي.\n• أي انتهاكات أو مشاكل ناتجة عن استخدام المستخدم لهذه الروابط.\n\nالمستخدم هو المسؤول بالكامل عن المحتوى الذي يقوم بالوصول إليه، وأي مطالبات أو مخالفات حقوق ملكية فكرية تقع على عاتق مصدر المحتوى أو المستخدم.\n\nباستخدامك لتطبيق شعيب سبورت، فإنك توافق على أن التطبيق ومطوريه غير مسؤولين عن أي أضرار أو مطالبات أو مخالفات ناتجة عن روابط أو محتويات خارجية.",
     about: "عن التطبيق",
     aboutBody:
       "تطبيق ويب حديث لمشجّعي كرة القدم وفرق الشعيب للناشئين.\nشاهد الان · اليوم · كأس العالم · تلفاز مباشر · إعدادات",
@@ -137,7 +137,7 @@ const dict = {
     intlTitle: "World Cup",
     intlSub: "Qualified teams and fixtures",
     settingsTitle: "Settings",
-    settingsSub: "Language, theme, and privacy",
+    settingsSub: "Language, theme, and disclaimer",
     language: "Language",
     theme: "Theme",
     classic: "Classic",
@@ -154,7 +154,7 @@ const dict = {
     eliminated: "Eliminated",
     bracket: "Bracket",
     teams: "Teams",
-    privacy: "Privacy Policy",
+    privacy: "Disclaimer",
     contact: "Contact",
     installTitle: "Install this app",
     installBody: "Add to your home screen for an app-like experience.",
@@ -178,7 +178,7 @@ const dict = {
     gotIt: "Got it",
     dismiss: "Later",
     privacyBody:
-      "Shaib Sport (Web)\n\n• Language and theme are stored locally on your device.\n• Match data is fetched from public sports APIs.\n• No account is required.\n• Contact: 415apps@gmail.com",
+      "Al-Shaeeb Sport is an educational and informational application designed to provide users with access to sports-related information and publicly available content.\n\nIf users access any channels, including but not limited to beIN channels or other external streams, such content is provided through user-generated links and third-party sources. These links are not stored, hosted, managed, or controlled by our GitHub repositories, servers, or administration systems.\n\nAl-Shaeeb Sport does not own, operate, upload, broadcast, or control any external streams. We are not responsible for the availability, accuracy, legality, advertisements, content, or quality of any third-party streams.\n\nUsers are solely responsible for the content they choose to access. Any copyright claims, intellectual property disputes, unauthorized broadcasting, or legal violations related to third-party content are the responsibility of the content providers and users who access such content.\n\nBy using this application, you acknowledge that Al-Shaeeb Sport is not liable for any copyright infringement claims, damages, losses, or violations resulting from third-party content.",
     about: "About",
     aboutBody:
       "A modern web app for football fans and Shaib youth teams.\nWatch · Today · World Cup · Live TV · Settings",
