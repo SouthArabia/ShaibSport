@@ -1,6 +1,6 @@
 const dict = {
   ar: {
-    brandSub: "رفيق فرق الشعيب",
+    brandSub: "العالم بين يديك",
     matches: "شاهد الان",
     today: "اليوم",
     international: "كأس العالم",
@@ -76,7 +76,7 @@ const dict = {
     dayTomorrow: "غداً",
   },
   en: {
-    brandSub: "Shaib youth companion",
+    brandSub: "The world in your hands",
     matches: "Watch",
     today: "Today",
     international: "World Cup",

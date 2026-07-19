@@ -120,7 +120,7 @@
         <img class="brand-mark" src="./assets/brand/mainicon.png" alt="" width="40" height="40" />
         <div class="brand-text">
           <strong>Shaib Sport</strong>
-          <span id="brand-sub">رفيق فرق الشعيب</span>
+          <span id="brand-sub">العالم بين يديك</span>
         </div>
       </div>
       <div class="header-actions">
@@ -281,7 +281,7 @@
     // Force iOS Safari off stale service workers / caches
     (function () {
       if (!("serviceWorker" in navigator)) return;
-      var SW_URL = "./sw.js?v=32";
+      var SW_URL = "./sw.js?v=33";
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         return Promise.all(
           regs.map(function (r) {
@@ -299,7 +299,7 @@
       }).catch(function () {});
     })();
   </script>
-  <script type="module" src="./js/app.js?v=32"></script>
+  <script type="module" src="./js/app.js?v=33"></script>
   <script>
     (function () {
       // Lightweight tab switching fallback (works even if modules are busy)
