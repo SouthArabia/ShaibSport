@@ -606,6 +606,9 @@ function renderIptv() {
 
   const q = state.iptv.query.trim().toLowerCase();
   const autoSkipOn = state.prefs.autoSkip !== false;
+  const isGroupsView = state.iptv.view !== "channels" || !state.iptv.group;
+  const total = data.channels?.length || 0;
+  const menaCount = (data.channels || []).filter(isMenaChannel).length;
   let channelResults = [];
   let html = `
     <div class="iptv-toolbar">
@@ -614,6 +617,30 @@ function renderIptv() {
         ${t(lang, autoSkipOn ? "autoSkipOn" : "autoSkipOff")}
       </button>
     </div>`;
+
+  if (isGroupsView) {
+    html += `
+      <div class="canvas-wide" style="margin-bottom:12px">
+        ${tileButton({
+          id: "iptv-mena",
+          kind: "ch4",
+          title: t(lang, "iptvMena"),
+          subtitle: `${menaCount} ${t(lang, "iptvChannels")}`,
+          icon: "bolt",
+          emphasized: true,
+        })}
+      </div>
+      <div class="canvas-wide" style="margin-bottom:12px">
+        ${tileButton({
+          id: "iptv-all",
+          kind: "ch4",
+          title: t(lang, "iptvAll"),
+          subtitle: `${total} ${t(lang, "iptvChannels")}`,
+          icon: "tv",
+          emphasized: true,
+        })}
+      </div>`;
+  }
 
   if (state.iptv.view === "channels" && state.iptv.group) {
     const allMode = state.iptv.group === "__all__";
@@ -667,7 +694,7 @@ function renderIptv() {
     if (slice.length < list.length) {
       html += `<div style="margin:14px 0;text-align:center"><button type="button" class="btn" id="iptv-more">${t(lang, "iptvMore")}</button></div>`;
     }
-  } else {
+  } else if (isGroupsView) {
     let groups = data.groups;
     if (q) {
       const menaQuery = isMenaQuery(q);
@@ -687,29 +714,7 @@ function renderIptv() {
         })
         .filter((g) => g.count > 0 || iptvGroupMatchesQuery(lang, g.name, q));
     }
-    const total = data.channels?.length || 0;
-    const menaCount = (data.channels || []).filter(isMenaChannel).length;
     html += `
-      <div class="canvas-wide" style="margin-bottom:12px">
-        ${tileButton({
-          id: "iptv-mena",
-          kind: "ch4",
-          title: t(lang, "iptvMena"),
-          subtitle: `${menaCount} ${t(lang, "iptvChannels")}`,
-          icon: "bolt",
-          emphasized: true,
-        })}
-      </div>
-      <div class="canvas-wide" style="margin-bottom:12px">
-        ${tileButton({
-          id: "iptv-all",
-          kind: "ch4",
-          title: t(lang, "iptvAll"),
-          subtitle: `${total} ${t(lang, "iptvChannels")}`,
-          icon: "tv",
-          emphasized: true,
-        })}
-      </div>
       <div class="canvas-grid">
         ${q && channelResults.length
           ? channelResults
