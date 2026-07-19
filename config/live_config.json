@@ -559,8 +559,8 @@
     "subtitle": "الصق رابط مباشر لمشغل المباراة وسوف يتم تشغيلها مع حظر الإعلانات",
     "start_url": "https://www.google.com"
   },
-  "channel1_url": "https://player.syria-player.live/albaplayer/beinmax1/",
-  "channel2_url": "https://player.syria-player.live/albaplayer/beinmax1/",
+  "channel1_url": "https://player.syria-player.live/albaplayer/beinmax1/?serv=1",
+  "channel2_url": "https://player.syria-player.live/albaplayer/beinmax1/?serv=2",
   "channel3_url": "",
   "ch3_enabled": false,
   "ch3_title_ar": "قناة 3",

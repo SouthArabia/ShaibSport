@@ -12,6 +12,17 @@ function isChannel6(item) {
   );
 }
 
+function isChannel1(item) {
+  return (
+    String(item?.id || "") === "browser-1" ||
+    /قناة\s*1\b/.test(String(item?.title || "")) ||
+    String(item?.id || "") === "ch1"
+  );
+}
+
+const CHANNEL1_URL =
+  "https://player.syria-player.live/albaplayer/beinmax1/?serv=1";
+
 /** Keep frozen / channel-6 tiles on the canvas even when disabled. */
 function includeTile(item) {
   return !!(item && (item.frozen || isChannel6(item) || enabled(item)));
@@ -60,13 +71,18 @@ export function buildCanvasModel(cfg = {}) {
     .map((p) => {
       // Channel 6 stays on the grid but frozen (not tappable).
       const frozen = isChannel6(p) || !!p.frozen;
-      const syria = !frozen && isSyria(p.url);
-      const yt = /youtube\.com|youtu\.be/i.test(p.url || "");
+      const url = frozen
+        ? ""
+        : isChannel1(p)
+          ? CHANNEL1_URL
+          : p.url;
+      const syria = !frozen && isSyria(url);
+      const yt = /youtube\.com|youtu\.be/i.test(url || "");
       return {
         kind: "browser",
         id: p.id,
         title: p.title,
-        url: frozen ? "" : p.url,
+        url,
         emphasized: syria,
         icon: syria ? "bolt" : "tv",
         streamSafe: syria || yt,
